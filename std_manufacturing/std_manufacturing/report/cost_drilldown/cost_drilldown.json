@@ -1,5 +1,7 @@
 {
-	"add_total_row": 1,
+	"add_total_row": 0,
+	"tree": true,
+	"initial_depth": 1,
 	"columns": [],
 	"creation": "2026-03-12 00:00:00",
 	"disabled": 0,

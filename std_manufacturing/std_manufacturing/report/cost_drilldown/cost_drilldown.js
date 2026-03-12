@@ -15,9 +15,13 @@ frappe.query_reports["Cost Drilldown"] = {
 		},
 		{
 			fieldname: "show_detail",
-			label: __("Show Detail by Cost Center"),
+			label: __("Show Source Breakdown"),
 			fieldtype: "Check",
 			default: 0,
 		},
 	],
+	tree: true,
+	name_field: "label",
+	parent_field: "parent_label",
+	initial_depth: 1,
 };
