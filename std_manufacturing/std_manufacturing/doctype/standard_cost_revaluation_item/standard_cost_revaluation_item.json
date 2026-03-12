@@ -1,0 +1,84 @@
+{
+	"actions": [],
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"item_code",
+		"warehouse",
+		"current_standard_rate",
+		"new_standard_rate",
+		"closing_qty",
+		"revaluation_amount",
+		"rate_basis",
+		"source_plcv_entry"
+	],
+	"fields": [
+		{
+			"fieldname": "item_code",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Item Code",
+			"options": "Item",
+			"reqd": 1
+		},
+		{
+			"fieldname": "warehouse",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Warehouse",
+			"options": "Warehouse",
+			"reqd": 1
+		},
+		{
+			"fieldname": "current_standard_rate",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Current Standard Rate",
+			"read_only": 1
+		},
+		{
+			"fieldname": "new_standard_rate",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "New Standard Rate",
+			"reqd": 1
+		},
+		{
+			"fieldname": "closing_qty",
+			"fieldtype": "Float",
+			"in_list_view": 1,
+			"label": "Closing Qty",
+			"read_only": 1
+		},
+		{
+			"fieldname": "revaluation_amount",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Revaluation Amount",
+			"read_only": 1
+		},
+		{
+			"fieldname": "rate_basis",
+			"fieldtype": "Data",
+			"label": "Rate Basis"
+		},
+		{
+			"fieldname": "source_plcv_entry",
+			"fieldtype": "Link",
+			"label": "Source PLCV Entry",
+			"options": "PLCV Entry"
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Standard Cost Revaluation Item",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}

@@ -1,0 +1,138 @@
+{
+ "app": "std_manufacturing",
+ "charts": [],
+ "content": "[{\"id\":\"sc_header_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Standard Costing</b></span>\",\"col\":12}},{\"id\":\"sc_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Rate Management\",\"col\":4}},{\"id\":\"sc_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Period-End Close\",\"col\":4}},{\"id\":\"sc_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Cost Pools & Allocation\",\"col\":4}}]",
+ "creation": "2026-03-12 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "accounting",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Standard Costing",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Rate Management",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Standard Cost Rate",
+   "link_count": 0,
+   "link_to": "Standard Cost Rate",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Standard Cost Revaluation",
+   "link_count": 0,
+   "link_to": "Standard Cost Revaluation",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Period-End Close",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Costing Period",
+   "link_count": 0,
+   "link_to": "Costing Period",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Costing Period",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "PLCV Entry",
+   "link_count": 0,
+   "link_to": "PLCV Entry",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cost Pools & Allocation",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "Costing Period",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cost Pool",
+   "link_count": 0,
+   "link_to": "Cost Pool",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-03-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Std Manufacturing",
+ "name": "Standard Costing",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 30,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "Standard Cost Rates",
+   "link_to": "Standard Cost Rate",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Costing Periods",
+   "link_to": "Costing Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "PLCV Entries",
+   "link_to": "PLCV Entry",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "Revaluations",
+   "link_to": "Standard Cost Revaluation",
+   "type": "DocType"
+  }
+ ],
+ "title": "Standard Costing"
+}

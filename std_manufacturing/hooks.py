@@ -5,10 +5,10 @@ app_description = "App for std manufacturing"
 app_email = "info@quarkcs.com"
 app_license = "mit"
 
-# Apps
-# ------------------
+required_apps = ["erpnext"]
 
-# required_apps = []
+after_install = "std_manufacturing.setup.setup_custom_fields"
+after_migrate = "std_manufacturing.setup.setup_custom_fields"
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -132,13 +132,17 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Purchase Receipt": {
+		"before_submit": "std_manufacturing.api.standard_cost.enforce_standard_rate_on_receipt"
+	},
+	"Stock Entry": {
+		"before_submit": "std_manufacturing.api.standard_cost.enforce_standard_rate_on_entry"
+	},
+	"Purchase Invoice": {
+		"on_submit": "std_manufacturing.api.standard_cost.check_freight_invoice"
+	},
+}
 
 # Scheduled Tasks
 # ---------------

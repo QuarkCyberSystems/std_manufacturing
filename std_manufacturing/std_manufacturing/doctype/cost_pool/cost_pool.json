@@ -1,0 +1,173 @@
+{
+	"actions": [],
+	"autoname": "naming_series:",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"naming_series",
+		"costing_period",
+		"pool_type",
+		"column_break_1",
+		"source_document_type",
+		"source_document",
+		"total_amount",
+		"allocation_method",
+		"status",
+		"remarks",
+		"section_purchase_receipts",
+		"purchase_receipts",
+		"section_items",
+		"items"
+	],
+	"fields": [
+		{
+			"default": "CPOOL-.####",
+			"fieldname": "naming_series",
+			"fieldtype": "Select",
+			"hidden": 1,
+			"label": "Naming Series",
+			"options": "CPOOL-.####"
+		},
+		{
+			"fieldname": "costing_period",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Costing Period",
+			"options": "Costing Period",
+			"reqd": 1
+		},
+		{
+			"default": "Freight",
+			"fieldname": "pool_type",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Pool Type",
+			"options": "Freight\nInsurance\nImport Duty\nOther"
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Purchase Invoice",
+			"fieldname": "source_document_type",
+			"fieldtype": "Select",
+			"label": "Source Document Type",
+			"options": "Purchase Invoice\nJournal Entry"
+		},
+		{
+			"fieldname": "source_document",
+			"fieldtype": "Dynamic Link",
+			"label": "Source Document",
+			"options": "source_document_type"
+		},
+		{
+			"fieldname": "total_amount",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Total Amount",
+			"reqd": 1
+		},
+		{
+			"default": "By Qty",
+			"fieldname": "allocation_method",
+			"fieldtype": "Select",
+			"label": "Allocation Method",
+			"options": "By Qty\nBy Amount"
+		},
+		{
+			"default": "Open",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"label": "Status",
+			"options": "Open\nAllocated\nClosed"
+		},
+		{
+			"fieldname": "remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks"
+		},
+		{
+			"fieldname": "section_purchase_receipts",
+			"fieldtype": "Section Break",
+			"label": "Purchase Receipts"
+		},
+		{
+			"fieldname": "purchase_receipts",
+			"fieldtype": "Table",
+			"label": "Purchase Receipts",
+			"options": "Cost Pool Purchase Receipt"
+		},
+		{
+			"fieldname": "section_items",
+			"fieldtype": "Section Break",
+			"label": "Items"
+		},
+		{
+			"fieldname": "items",
+			"fieldtype": "Table",
+			"label": "Items",
+			"options": "Cost Pool Item"
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Cost Pool",
+	"naming_rule": "By \"Naming Series\" field",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"amend": 1
+		},
+		{
+			"cancel": 1,
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"delete": 1,
+			"amend": 1
+		},
+		{
+			"amend": 0,
+			"cancel": 0,
+			"create": 1,
+			"delete": 0,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

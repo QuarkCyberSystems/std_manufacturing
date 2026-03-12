@@ -1,0 +1,233 @@
+{
+	"actions": [],
+	"autoname": "format:CP-{company_abbr}-{period_start}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"period_name",
+		"company",
+		"company_abbr",
+		"fiscal_year",
+		"column_break_1",
+		"period_start",
+		"period_end",
+		"ytd_start_date",
+		"previous_period",
+		"section_break_status",
+		"status",
+		"current_step",
+		"column_break_status2",
+		"primary_mirror_status",
+		"power_status",
+		"allocation_status",
+		"purchased_cpu_status",
+		"produced_cpu_status",
+		"revaluation_status",
+		"plcv_status",
+		"amended_from"
+	],
+	"fields": [
+		{
+			"fieldname": "period_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Period Name",
+			"reqd": 1
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Company",
+			"options": "Company",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "company.abbr",
+			"fieldname": "company_abbr",
+			"fieldtype": "Data",
+			"hidden": 1,
+			"label": "Company Abbr",
+			"read_only": 1
+		},
+		{
+			"fieldname": "fiscal_year",
+			"fieldtype": "Link",
+			"label": "Fiscal Year",
+			"options": "Fiscal Year",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "period_start",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Period Start",
+			"reqd": 1
+		},
+		{
+			"fieldname": "period_end",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Period End",
+			"reqd": 1
+		},
+		{
+			"fieldname": "ytd_start_date",
+			"fieldtype": "Date",
+			"label": "YTD Start Date",
+			"read_only": 1
+		},
+		{
+			"fieldname": "previous_period",
+			"fieldtype": "Link",
+			"label": "Previous Period",
+			"options": "Costing Period"
+		},
+		{
+			"fieldname": "section_break_status",
+			"fieldtype": "Section Break",
+			"label": "Status"
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nIn Progress\nCompleted\nCancelled"
+		},
+		{
+			"default": "0",
+			"fieldname": "current_step",
+			"fieldtype": "Int",
+			"label": "Current Step"
+		},
+		{
+			"fieldname": "column_break_status2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "primary_mirror_status",
+			"fieldtype": "Select",
+			"label": "Primary Mirror Status",
+			"options": "Pending\nCompleted"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "power_status",
+			"fieldtype": "Select",
+			"label": "Power Status",
+			"options": "Pending\nKWH Posted\nRevalued"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "allocation_status",
+			"fieldtype": "Select",
+			"label": "Allocation Status",
+			"options": "Pending\nRunning\nCompleted"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "purchased_cpu_status",
+			"fieldtype": "Select",
+			"label": "Purchased CPU Status",
+			"options": "Pending\nCalculated"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "produced_cpu_status",
+			"fieldtype": "Select",
+			"label": "Produced CPU Status",
+			"options": "Pending\nCalculated"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "revaluation_status",
+			"fieldtype": "Select",
+			"label": "Revaluation Status",
+			"options": "Pending\nSubmitted"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "plcv_status",
+			"fieldtype": "Select",
+			"label": "PLCV Status",
+			"options": "Pending\nPosted"
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Costing Period",
+			"print_hide": 1,
+			"read_only": 1
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Costing Period",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"amend": 1
+		},
+		{
+			"cancel": 1,
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"delete": 1,
+			"amend": 1
+		},
+		{
+			"amend": 0,
+			"cancel": 0,
+			"create": 1,
+			"delete": 0,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "period_name",
+	"track_changes": 1
+}

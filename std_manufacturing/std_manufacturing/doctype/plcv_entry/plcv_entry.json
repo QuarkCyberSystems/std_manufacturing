@@ -1,0 +1,299 @@
+{
+	"actions": [],
+	"autoname": "format:PLCV-{item_code}-{costing_period}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"costing_period",
+		"item_code",
+		"item_name",
+		"warehouse",
+		"cost_category",
+		"section_ytd_inputs",
+		"opening_qty",
+		"opening_value",
+		"ytd_purchase_qty",
+		"ytd_purchase_value",
+		"ytd_cost_pool_amount",
+		"column_break_ytd",
+		"ytd_production_qty",
+		"ytd_material_cost",
+		"ytd_overhead_cost",
+		"section_ytd_output",
+		"ytd_actual_cpu",
+		"section_variance",
+		"standard_rate",
+		"variance_per_unit",
+		"column_break_var",
+		"closing_stock_qty",
+		"ytd_issued_qty",
+		"section_variance_split",
+		"total_variance",
+		"cogs_variance",
+		"inventory_variance",
+		"section_gl",
+		"variance_journal_entry",
+		"standard_cost_revaluation",
+		"status"
+	],
+	"fields": [
+		{
+			"fieldname": "costing_period",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Costing Period",
+			"options": "Costing Period",
+			"reqd": 1
+		},
+		{
+			"fieldname": "item_code",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Item Code",
+			"options": "Item",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "item_code.item_name",
+			"fieldname": "item_name",
+			"fieldtype": "Data",
+			"label": "Item Name",
+			"read_only": 1
+		},
+		{
+			"fieldname": "warehouse",
+			"fieldtype": "Link",
+			"label": "Warehouse",
+			"options": "Warehouse"
+		},
+		{
+			"default": "Purchased",
+			"fieldname": "cost_category",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Cost Category",
+			"options": "Purchased\nProduced"
+		},
+		{
+			"fieldname": "section_ytd_inputs",
+			"fieldtype": "Section Break",
+			"label": "YTD Inputs"
+		},
+		{
+			"default": "0",
+			"fieldname": "opening_qty",
+			"fieldtype": "Float",
+			"label": "Opening Qty"
+		},
+		{
+			"default": "0",
+			"fieldname": "opening_value",
+			"fieldtype": "Currency",
+			"label": "Opening Value"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_purchase_qty",
+			"fieldtype": "Float",
+			"label": "YTD Purchase Qty"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_purchase_value",
+			"fieldtype": "Currency",
+			"label": "YTD Purchase Value"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_cost_pool_amount",
+			"fieldtype": "Currency",
+			"label": "YTD Cost Pool Amount"
+		},
+		{
+			"fieldname": "column_break_ytd",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_production_qty",
+			"fieldtype": "Float",
+			"label": "YTD Production Qty"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_material_cost",
+			"fieldtype": "Currency",
+			"label": "YTD Material Cost"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_overhead_cost",
+			"fieldtype": "Currency",
+			"label": "YTD Overhead Cost"
+		},
+		{
+			"fieldname": "section_ytd_output",
+			"fieldtype": "Section Break",
+			"label": "YTD Output"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_actual_cpu",
+			"fieldtype": "Currency",
+			"label": "YTD Actual CPU",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_variance",
+			"fieldtype": "Section Break",
+			"label": "Variance"
+		},
+		{
+			"default": "0",
+			"fieldname": "standard_rate",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Standard Rate"
+		},
+		{
+			"default": "0",
+			"fieldname": "variance_per_unit",
+			"fieldtype": "Currency",
+			"label": "Variance Per Unit",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_var",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "closing_stock_qty",
+			"fieldtype": "Float",
+			"label": "Closing Stock Qty"
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_issued_qty",
+			"fieldtype": "Float",
+			"label": "YTD Issued Qty"
+		},
+		{
+			"fieldname": "section_variance_split",
+			"fieldtype": "Section Break",
+			"label": "Variance Split"
+		},
+		{
+			"default": "0",
+			"fieldname": "total_variance",
+			"fieldtype": "Currency",
+			"label": "Total Variance",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "cogs_variance",
+			"fieldtype": "Currency",
+			"label": "COGS Variance",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "inventory_variance",
+			"fieldtype": "Currency",
+			"label": "Inventory Variance",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_gl",
+			"fieldtype": "Section Break",
+			"label": "GL Links"
+		},
+		{
+			"fieldname": "variance_journal_entry",
+			"fieldtype": "Link",
+			"label": "Variance Journal Entry",
+			"options": "Journal Entry",
+			"read_only": 1
+		},
+		{
+			"fieldname": "standard_cost_revaluation",
+			"fieldtype": "Link",
+			"label": "Standard Cost Revaluation",
+			"options": "Standard Cost Revaluation",
+			"read_only": 1
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nCalculated\nPosted\nCancelled"
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "PLCV Entry",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"amend": 1
+		},
+		{
+			"cancel": 1,
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"delete": 1,
+			"amend": 1
+		},
+		{
+			"amend": 0,
+			"cancel": 0,
+			"create": 1,
+			"delete": 0,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "item_name",
+	"track_changes": 1
+}

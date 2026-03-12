@@ -1,0 +1,45 @@
+{
+	"actions": [],
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": ["purchase_receipt", "receipt_date", "supplier"],
+	"fields": [
+		{
+			"fieldname": "purchase_receipt",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Purchase Receipt",
+			"options": "Purchase Receipt",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "purchase_receipt.posting_date",
+			"fieldname": "receipt_date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Receipt Date",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "purchase_receipt.supplier",
+			"fieldname": "supplier",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Supplier",
+			"options": "Supplier",
+			"read_only": 1
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Cost Pool Purchase Receipt",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
+}

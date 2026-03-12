@@ -1,0 +1,185 @@
+{
+	"actions": [],
+	"autoname": "naming_series:",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"naming_series",
+		"company",
+		"posting_date",
+		"source_type",
+		"column_break_1",
+		"rate_derivation_method",
+		"costing_period",
+		"status",
+		"section_items",
+		"items",
+		"section_totals",
+		"total_revaluation_amount",
+		"stock_reconciliation",
+		"remarks",
+		"amended_from"
+	],
+	"fields": [
+		{
+			"default": "SCR-.####",
+			"fieldname": "naming_series",
+			"fieldtype": "Select",
+			"hidden": 1,
+			"label": "Naming Series",
+			"options": "SCR-.####"
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Company",
+			"options": "Company",
+			"reqd": 1
+		},
+		{
+			"fieldname": "posting_date",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Posting Date",
+			"reqd": 1
+		},
+		{
+			"default": "PLCV",
+			"fieldname": "source_type",
+			"fieldtype": "Select",
+			"label": "Source Type",
+			"options": "PLCV\nRate Update\nManual"
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "YTD",
+			"fieldname": "rate_derivation_method",
+			"fieldtype": "Select",
+			"label": "Rate Derivation Method",
+			"options": "YTD\nMTD\nManual"
+		},
+		{
+			"fieldname": "costing_period",
+			"fieldtype": "Link",
+			"label": "Costing Period",
+			"options": "Costing Period"
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nSubmitted\nCancelled",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_items",
+			"fieldtype": "Section Break",
+			"label": "Items"
+		},
+		{
+			"fieldname": "items",
+			"fieldtype": "Table",
+			"label": "Items",
+			"options": "Standard Cost Revaluation Item",
+			"reqd": 1
+		},
+		{
+			"fieldname": "section_totals",
+			"fieldtype": "Section Break",
+			"label": "Totals"
+		},
+		{
+			"fieldname": "total_revaluation_amount",
+			"fieldtype": "Currency",
+			"label": "Total Revaluation Amount",
+			"read_only": 1
+		},
+		{
+			"fieldname": "stock_reconciliation",
+			"fieldtype": "Link",
+			"label": "Stock Reconciliation",
+			"options": "Stock Reconciliation",
+			"read_only": 1
+		},
+		{
+			"fieldname": "remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks"
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Standard Cost Revaluation",
+			"print_hide": 1,
+			"read_only": 1
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Standard Cost Revaluation",
+	"naming_rule": "By \"Naming Series\" field",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"amend": 1
+		},
+		{
+			"cancel": 1,
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"delete": 1,
+			"amend": 1
+		},
+		{
+			"amend": 0,
+			"cancel": 0,
+			"create": 1,
+			"delete": 0,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

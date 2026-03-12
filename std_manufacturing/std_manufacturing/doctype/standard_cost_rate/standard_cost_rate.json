@@ -1,0 +1,193 @@
+{
+	"actions": [],
+	"autoname": "format:SCR-{item_code}-{effective_from}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"item_code",
+		"item_name",
+		"uom",
+		"column_break_1",
+		"standard_rate",
+		"effective_from",
+		"effective_to",
+		"section_break_2",
+		"fiscal_year",
+		"rate_basis",
+		"costing_period",
+		"column_break_3",
+		"status",
+		"approved_by",
+		"remarks",
+		"amended_from"
+	],
+	"fields": [
+		{
+			"fieldname": "item_code",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Item Code",
+			"options": "Item",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "item_code.item_name",
+			"fieldname": "item_name",
+			"fieldtype": "Data",
+			"label": "Item Name",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "item_code.stock_uom",
+			"fieldname": "uom",
+			"fieldtype": "Link",
+			"label": "UOM",
+			"options": "UOM",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "standard_rate",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Standard Rate",
+			"reqd": 1
+		},
+		{
+			"fieldname": "effective_from",
+			"fieldtype": "Date",
+			"in_list_view": 1,
+			"label": "Effective From",
+			"reqd": 1
+		},
+		{
+			"fieldname": "effective_to",
+			"fieldtype": "Date",
+			"label": "Effective To"
+		},
+		{
+			"fieldname": "section_break_2",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "fiscal_year",
+			"fieldtype": "Link",
+			"label": "Fiscal Year",
+			"options": "Fiscal Year"
+		},
+		{
+			"default": "Budget",
+			"fieldname": "rate_basis",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Rate Basis",
+			"options": "Budget\nPLCV Actual\nManual",
+			"reqd": 1
+		},
+		{
+			"depends_on": "eval:doc.rate_basis=='PLCV Actual'",
+			"fieldname": "costing_period",
+			"fieldtype": "Link",
+			"label": "Costing Period",
+			"options": "Costing Period"
+		},
+		{
+			"fieldname": "column_break_3",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nActive\nSuperseded\nCancelled",
+			"read_only": 1
+		},
+		{
+			"fieldname": "approved_by",
+			"fieldtype": "Link",
+			"label": "Approved By",
+			"options": "User"
+		},
+		{
+			"fieldname": "remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks"
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Standard Cost Rate",
+			"print_hide": 1,
+			"read_only": 1
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Standard Cost Rate",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"amend": 1
+		},
+		{
+			"cancel": 1,
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1,
+			"delete": 1,
+			"amend": 1
+		},
+		{
+			"amend": 0,
+			"cancel": 0,
+			"create": 1,
+			"delete": 0,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "item_name",
+	"track_changes": 1
+}
