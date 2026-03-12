@@ -225,6 +225,8 @@ def _create_allocation_co_document(cycle, shares, sender_balance, costing_period
 	co_doc.cost_element = cycle.secondary_cost_element
 	co_doc.period = costing_period
 	co_doc.posting_date = period_doc.period_end
+	co_doc.reference_doctype = "Allocation Cycle"
+	co_doc.reference_name = cycle.name
 	co_doc.remarks = f"Allocation Cycle {cycle.cycle_number}: {cycle.cycle_name}"
 
 	amount_to_allocate = abs(sender_balance)

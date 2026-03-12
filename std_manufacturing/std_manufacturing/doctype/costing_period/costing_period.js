@@ -28,6 +28,30 @@ frappe.ui.form.on("Costing Period", {
 			);
 		}
 
+		// Step 2: Create Process Orders
+		if (frm.doc.process_order_status === "Pending" && frm.doc.primary_mirror_status === "Completed") {
+			frm.add_custom_button(
+				__("Create Process Orders"),
+				() => {
+					frappe.confirm(
+						__("This will create draft Process Orders for all active recipes. Continue?"),
+						() => {
+							frappe.call({
+								method: "std_manufacturing.std_manufacturing.doctype.costing_period.costing_period.run_production_entry",
+								args: { costing_period: frm.doc.name },
+								freeze: true,
+								freeze_message: __("Creating Process Orders..."),
+								callback: (r) => {
+									frm.reload_doc();
+								},
+							});
+						}
+					);
+				},
+				__("Period-End Close")
+			);
+		}
+
 		// Step 3: Run Allocation
 		if (frm.doc.allocation_status === "Pending" && frm.doc.primary_mirror_status === "Completed") {
 			frm.add_custom_button(
@@ -41,6 +65,30 @@ frappe.ui.form.on("Costing Period", {
 								args: { costing_period: frm.doc.name },
 								freeze: true,
 								freeze_message: __("Running Allocation Cycles..."),
+								callback: (r) => {
+									frm.reload_doc();
+								},
+							});
+						}
+					);
+				},
+				__("Period-End Close")
+			);
+		}
+
+		// Step 5: Production Costing (after allocation)
+		if (frm.doc.production_cost_status === "Pending" && frm.doc.allocation_status === "Completed") {
+			frm.add_custom_button(
+				__("Calculate Production Costs"),
+				() => {
+					frappe.confirm(
+						__("This will calculate unit costs for all Process Orders. Continue?"),
+						() => {
+							frappe.call({
+								method: "std_manufacturing.std_manufacturing.doctype.costing_period.costing_period.run_production_costing",
+								args: { costing_period: frm.doc.name },
+								freeze: true,
+								freeze_message: __("Calculating production costs..."),
 								callback: (r) => {
 									frm.reload_doc();
 								},
@@ -81,6 +129,18 @@ frappe.ui.form.on("Costing Period", {
 				() => {
 					frappe.set_route("List", "CO Document", {
 						period: frm.doc.name,
+					});
+				},
+				__("View")
+			);
+		}
+
+		if (frm.doc.process_order_status !== "Pending") {
+			frm.add_custom_button(
+				__("View Process Orders"),
+				() => {
+					frappe.set_route("List", "Process Order", {
+						costing_period: frm.doc.name,
 					});
 				},
 				__("View")

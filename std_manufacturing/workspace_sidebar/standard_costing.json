@@ -152,6 +152,39 @@
    "collapsible": 1,
    "indent": 0,
    "keep_closed": 0,
+   "label": "Production Phase",
+   "link_to": "Production Phase",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Production Recipe",
+   "link_to": "Production Recipe",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Process Order",
+   "link_to": "Process Order",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
    "label": "Power Production Record",
    "link_to": "Power Production Record",
    "link_type": "DocType",
@@ -228,6 +261,18 @@
    "keep_closed": 0,
    "label": "Cost Drilldown",
    "link_to": "Cost Drilldown",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "table",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Product Cost Drilldown",
+   "link_to": "Product Cost Drilldown",
    "link_type": "Report",
    "show_arrow": 0,
    "type": "Link"

@@ -75,6 +75,54 @@ def run_allocation(costing_period):
 
 
 @frappe.whitelist()
+def run_production_entry(costing_period):
+	"""Step 2: Create Process Orders for all active recipes."""
+	from std_manufacturing.api.process_order import create_process_orders_for_period
+
+	period_doc = frappe.get_doc("Costing Period", costing_period)
+	if period_doc.docstatus != 1:
+		frappe.throw(_("Costing Period must be submitted"))
+
+	result = create_process_orders_for_period(costing_period)
+	frappe.db.set_value("Costing Period", costing_period, "process_order_status", "Created")
+	frappe.db.commit()
+	return result
+
+
+@frappe.whitelist()
+def run_production_costing(costing_period):
+	"""Step 5: Calculate unit costs for all submitted Process Orders after allocation."""
+	from std_manufacturing.api.process_order import calculate_unit_costs
+
+	period_doc = frappe.get_doc("Costing Period", costing_period)
+	if period_doc.docstatus != 1:
+		frappe.throw(_("Costing Period must be submitted"))
+
+	process_orders = frappe.get_all(
+		"Process Order",
+		filters={
+			"costing_period": costing_period,
+			"docstatus": 1,
+			"status": "Open",
+		},
+		pluck="name",
+	)
+
+	calculated = 0
+	for po_name in process_orders:
+		try:
+			calculate_unit_costs(po_name)
+			calculated += 1
+		except Exception:
+			frappe.log_error(title=f"Production Costing Error: {po_name}")
+
+	frappe.db.set_value("Costing Period", costing_period, "production_cost_status", "Calculated")
+	frappe.db.commit()
+	frappe.msgprint(_("{0} Process Orders costed").format(calculated))
+	return calculated
+
+
+@frappe.whitelist()
 def close_period(costing_period):
 	"""Final step: Mark the costing period as Completed."""
 	period_doc = frappe.get_doc("Costing Period", costing_period)

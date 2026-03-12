@@ -27,6 +27,14 @@ CUSTOM_FIELDS = {
 			"insert_after": "custom_cost_category",
 			"description": "Include in period-end YTD cycle",
 		},
+		{
+			"fieldname": "custom_production_recipe",
+			"fieldtype": "Link",
+			"label": "Default Production Recipe",
+			"options": "Production Recipe",
+			"insert_after": "custom_include_in_plcv",
+			"description": "Default recipe for producing this item",
+		},
 	],
 	"Purchase Receipt Item": [
 		{

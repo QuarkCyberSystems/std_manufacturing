@@ -47,6 +47,67 @@ def get_co_cc_balance_by_type(cost_center, period, co_document_type=None):
 	return flt(result[0].net_balance) if result else 0
 
 
+def get_co_cc_balance_for_costing(cost_center, period):
+	"""Get the CC balance for production costing purposes.
+
+	This excludes outbound chain allocation credits (where this CC is the sender
+	in a Production Ratio allocation cycle). This way, each production step
+	retains its accumulated cost for unit cost calculation, even after
+	downstream chain allocations have run.
+
+	The balance includes:
+	- Primary Mirror (direct GL costs)
+	- Assessment / Distribution debits (costs received from support CCs)
+	- But EXCLUDES credits from downstream chain allocations
+	"""
+	# Get allocation cycles where this CC is the sender (outbound chain)
+	outbound_cycles = frappe.get_all(
+		"Allocation Cycle",
+		filters={
+			"sender_cost_center": cost_center,
+			"is_active": 1,
+		},
+		pluck="name",
+	)
+
+	if not outbound_cycles:
+		# No outbound allocations - use standard balance
+		return get_co_cc_balance(cost_center, period)
+
+	# Get CO Documents created by those outbound allocation cycles
+	# These are the ones where this CC was credited (cost sent out)
+	outbound_co_docs = frappe.get_all(
+		"CO Document",
+		filters={
+			"period": period,
+			"docstatus": 1,
+			"reference_doctype": "Allocation Cycle",
+			"reference_name": ("in", outbound_cycles),
+		},
+		pluck="name",
+	)
+
+	if not outbound_co_docs:
+		return get_co_cc_balance(cost_center, period)
+
+	# Get full balance minus the outbound allocation credits
+	result = frappe.db.sql(
+		"""
+		SELECT
+			COALESCE(SUM(line.debit_amount), 0) - COALESCE(SUM(line.credit_amount), 0) as net_balance
+		FROM `tabCO Document Line` line
+		JOIN `tabCO Document` doc ON doc.name = line.parent
+		WHERE doc.docstatus = 1
+			AND doc.period = %s
+			AND line.cost_center = %s
+			AND doc.name NOT IN %s
+		""",
+		(period, cost_center, outbound_co_docs),
+		as_dict=True,
+	)
+	return flt(result[0].net_balance) if result else 0
+
+
 def get_skf_entry_value(skf, period, cost_center):
 	"""Get submitted SKF Entry quantity for a specific SKF/period/cost center."""
 	result = frappe.db.get_value(

@@ -1,18 +1,48 @@
 {
  "app": "std_manufacturing",
  "charts": [],
- "content": "[{\"id\":\"sc_header_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Standard Costing</b></span>\",\"col\":12}},{\"id\":\"sc_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Rate Management\",\"col\":4}},{\"id\":\"sc_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Period-End Close\",\"col\":4}},{\"id\":\"sc_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Cost Pools & Allocation\",\"col\":4}}]",
+ "content": "[{\"id\":\"sc_header_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Standard Costing</b></span>\",\"col\":12}},{\"id\":\"sc_card_0\",\"type\":\"card\",\"data\":{\"card_name\":\"Production\",\"col\":4}},{\"id\":\"sc_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Rate Management\",\"col\":4}},{\"id\":\"sc_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Period-End Close\",\"col\":4}},{\"id\":\"sc_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Cost Pools & Allocation\",\"col\":4}},{\"id\":\"sc_card_4\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2026-03-12 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
- "icon": "es-line-bar-chart-2",
+ "icon": "calculator",
  "idx": 0,
  "is_hidden": 0,
  "label": "Standard Costing",
  "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Production",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Production Recipe",
+   "link_count": 0,
+   "link_to": "Production Recipe",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Process Order",
+   "link_count": 0,
+   "link_to": "Process Order",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
   {
    "hidden": 0,
    "is_query_report": 0,
@@ -90,6 +120,36 @@
    "link_to": "Cost Pool",
    "link_type": "DocType",
    "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Cost Drilldown",
+   "link_count": 0,
+   "link_to": "Cost Drilldown",
+   "link_type": "Report",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Product Cost Drilldown",
+   "link_count": 0,
+   "link_to": "Product Cost Drilldown",
+   "link_type": "Report",
+   "onboard": 1,
    "type": "Link"
   }
  ],

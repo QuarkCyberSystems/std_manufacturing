@@ -1,0 +1,387 @@
+{
+	"actions": [],
+	"autoname": "format:PO-{recipe_code}-{costing_period}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"costing_period",
+		"production_recipe",
+		"recipe_name",
+		"recipe_code",
+		"column_break_1",
+		"company",
+		"cost_center",
+		"production_phase",
+		"status",
+		"section_break_output",
+		"output_item",
+		"output_item_name",
+		"output_uom",
+		"column_break_output",
+		"total_output_qty",
+		"ytd_output_qty",
+		"section_break_output_entries",
+		"output_entries",
+		"section_break_input_entries",
+		"input_entries",
+		"section_break_cost",
+		"cc_balance",
+		"unit_cost",
+		"column_break_cost",
+		"standard_rate",
+		"cost_variance",
+		"cost_variance_pct",
+		"section_break_ytd",
+		"ytd_cc_balance",
+		"ytd_unit_cost",
+		"section_break_predecessors",
+		"predecessor_orders",
+		"section_break_successors",
+		"successor_orders",
+		"section_break_skf",
+		"skf_entry_posted",
+		"skf_entry",
+		"section_break_notes",
+		"remarks",
+		"amended_from"
+	],
+	"fields": [
+		{
+			"fieldname": "costing_period",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Costing Period",
+			"options": "Costing Period",
+			"reqd": 1
+		},
+		{
+			"fieldname": "production_recipe",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Production Recipe",
+			"options": "Production Recipe",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "production_recipe.recipe_name",
+			"fieldname": "recipe_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Recipe Name",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "production_recipe.recipe_code",
+			"fieldname": "recipe_code",
+			"fieldtype": "Data",
+			"hidden": 1,
+			"label": "Recipe Code",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fetch_from": "costing_period.company",
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"label": "Company",
+			"options": "Company",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "production_recipe.cost_center",
+			"fieldname": "cost_center",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Cost Center",
+			"options": "Cost Center",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "production_recipe.production_phase",
+			"fieldname": "production_phase",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Production Phase",
+			"options": "Production Phase",
+			"read_only": 1
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nOpen\nClosed\nCancelled",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_output",
+			"fieldtype": "Section Break",
+			"label": "Output Summary"
+		},
+		{
+			"fetch_from": "production_recipe.output_item",
+			"fieldname": "output_item",
+			"fieldtype": "Link",
+			"label": "Output Item",
+			"options": "Item",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "output_item.item_name",
+			"fieldname": "output_item_name",
+			"fieldtype": "Data",
+			"label": "Output Item Name",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "production_recipe.output_uom",
+			"fieldname": "output_uom",
+			"fieldtype": "Link",
+			"label": "UOM",
+			"options": "UOM",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_output",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "total_output_qty",
+			"fieldtype": "Float",
+			"label": "Total Output Qty (Period)",
+			"read_only": 1,
+			"bold": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_output_qty",
+			"fieldtype": "Float",
+			"label": "YTD Output Qty",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_output_entries",
+			"fieldtype": "Section Break",
+			"label": "Output Entries"
+		},
+		{
+			"fieldname": "output_entries",
+			"fieldtype": "Table",
+			"label": "Output Entries",
+			"options": "Process Order Output"
+		},
+		{
+			"fieldname": "section_break_input_entries",
+			"fieldtype": "Section Break",
+			"label": "Input Entries (Consumption)"
+		},
+		{
+			"fieldname": "input_entries",
+			"fieldtype": "Table",
+			"label": "Input Entries",
+			"options": "Process Order Input"
+		},
+		{
+			"fieldname": "section_break_cost",
+			"fieldtype": "Section Break",
+			"label": "Period Unit Cost"
+		},
+		{
+			"default": "0",
+			"fieldname": "cc_balance",
+			"fieldtype": "Currency",
+			"label": "Cost Center Balance",
+			"read_only": 1,
+			"description": "Total CO balance for this cost center in this period"
+		},
+		{
+			"default": "0",
+			"fieldname": "unit_cost",
+			"fieldtype": "Currency",
+			"label": "Unit Cost",
+			"read_only": 1,
+			"bold": 1,
+			"description": "CC Balance / Output Qty"
+		},
+		{
+			"fieldname": "column_break_cost",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "standard_rate",
+			"fieldtype": "Currency",
+			"label": "Standard Rate",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "cost_variance",
+			"fieldtype": "Currency",
+			"label": "Cost Variance",
+			"read_only": 1,
+			"description": "Unit Cost - Standard Rate"
+		},
+		{
+			"default": "0",
+			"fieldname": "cost_variance_pct",
+			"fieldtype": "Percent",
+			"label": "Variance %",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_ytd",
+			"fieldtype": "Section Break",
+			"label": "YTD Unit Cost",
+			"collapsible": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_cc_balance",
+			"fieldtype": "Currency",
+			"label": "YTD CC Balance",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "ytd_unit_cost",
+			"fieldtype": "Currency",
+			"label": "YTD Unit Cost",
+			"read_only": 1,
+			"bold": 1
+		},
+		{
+			"fieldname": "section_break_predecessors",
+			"fieldtype": "Section Break",
+			"label": "Predecessor Orders",
+			"collapsible": 1,
+			"description": "Process Orders that feed into this one"
+		},
+		{
+			"fieldname": "predecessor_orders",
+			"fieldtype": "Table",
+			"label": "Predecessor Orders",
+			"options": "Process Order Chain Link",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_successors",
+			"fieldtype": "Section Break",
+			"label": "Successor Orders",
+			"collapsible": 1,
+			"description": "Process Orders that consume this one's output"
+		},
+		{
+			"fieldname": "successor_orders",
+			"fieldtype": "Table",
+			"label": "Successor Orders",
+			"options": "Process Order Chain Link",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_skf",
+			"fieldtype": "Section Break",
+			"label": "SKF Posting",
+			"collapsible": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "skf_entry_posted",
+			"fieldtype": "Check",
+			"label": "SKF Entry Posted",
+			"read_only": 1
+		},
+		{
+			"fieldname": "skf_entry",
+			"fieldtype": "Link",
+			"label": "SKF Entry",
+			"options": "SKF Entry",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_notes",
+			"fieldtype": "Section Break",
+			"label": "Notes",
+			"collapsible": 1
+		},
+		{
+			"fieldname": "remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks"
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Process Order",
+			"print_hide": 1,
+			"read_only": 1
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Process Order",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"amend": 1,
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		},
+		{
+			"amend": 1,
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "recipe_name",
+	"track_changes": 1
+}

@@ -21,6 +21,8 @@
 		"primary_mirror_status",
 		"power_status",
 		"allocation_status",
+		"process_order_status",
+		"production_cost_status",
 		"purchased_cpu_status",
 		"produced_cpu_status",
 		"revaluation_status",
@@ -131,6 +133,20 @@
 			"fieldtype": "Select",
 			"label": "Allocation Status",
 			"options": "Pending\nRunning\nCompleted"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "process_order_status",
+			"fieldtype": "Select",
+			"label": "Process Order Status",
+			"options": "Pending\nCreated\nClosed"
+		},
+		{
+			"default": "Pending",
+			"fieldname": "production_cost_status",
+			"fieldtype": "Select",
+			"label": "Production Cost Status",
+			"options": "Pending\nCalculated"
 		},
 		{
 			"default": "Pending",

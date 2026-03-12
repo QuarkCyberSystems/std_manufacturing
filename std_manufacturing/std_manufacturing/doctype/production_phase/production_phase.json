@@ -1,0 +1,87 @@
+{
+	"actions": [],
+	"autoname": "field:phase_name",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"phase_name",
+		"sequence",
+		"column_break_1",
+		"description"
+	],
+	"fields": [
+		{
+			"fieldname": "phase_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Phase Name",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"fieldname": "sequence",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Sequence",
+			"reqd": 1,
+			"description": "Display order (10, 20, 30...)"
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Small Text",
+			"label": "Description"
+		}
+	],
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Production Phase",
+	"naming_rule": "By fieldname",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1
+		}
+	],
+	"quick_entry": 1,
+	"sort_field": "sequence",
+	"sort_order": "ASC",
+	"states": [],
+	"track_changes": 0
+}

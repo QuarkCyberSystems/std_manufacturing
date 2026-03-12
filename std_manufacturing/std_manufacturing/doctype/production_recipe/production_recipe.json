@@ -1,0 +1,229 @@
+{
+	"actions": [],
+	"autoname": "format:RECIPE-{recipe_code}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"recipe_code",
+		"recipe_name",
+		"company",
+		"column_break_1",
+		"production_phase",
+		"phase_sequence",
+		"cost_center",
+		"is_active",
+		"section_break_output",
+		"output_item",
+		"output_uom",
+		"column_break_output",
+		"production_skf",
+		"standard_output_qty",
+		"section_break_inputs",
+		"input_items",
+		"section_break_predecessors",
+		"predecessor_recipes",
+		"section_break_successors",
+		"successor_recipes",
+		"section_break_notes",
+		"description"
+	],
+	"fields": [
+		{
+			"fieldname": "recipe_code",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Recipe Code",
+			"reqd": 1,
+			"unique": 1,
+			"description": "Unique identifier, e.g. CRUSH-LIMESTONE"
+		},
+		{
+			"fieldname": "recipe_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Recipe Name",
+			"reqd": 1
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"label": "Company",
+			"options": "Company",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "production_phase",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Production Phase",
+			"options": "Production Phase",
+			"reqd": 1
+		},
+		{
+			"fieldname": "phase_sequence",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Phase Sequence",
+			"reqd": 1,
+			"description": "Numeric ordering for chain display (10, 20, 30...)"
+		},
+		{
+			"fieldname": "cost_center",
+			"fieldtype": "Link",
+			"label": "Cost Center",
+			"options": "Cost Center",
+			"reqd": 1,
+			"description": "The cost center where this production step accumulates costs"
+		},
+		{
+			"default": "1",
+			"fieldname": "is_active",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Active"
+		},
+		{
+			"fieldname": "section_break_output",
+			"fieldtype": "Section Break",
+			"label": "Output"
+		},
+		{
+			"fieldname": "output_item",
+			"fieldtype": "Link",
+			"label": "Output Item",
+			"options": "Item",
+			"reqd": 1,
+			"description": "The material this recipe produces"
+		},
+		{
+			"fetch_from": "output_item.stock_uom",
+			"fieldname": "output_uom",
+			"fieldtype": "Link",
+			"label": "Output UOM",
+			"options": "UOM",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_output",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "production_skf",
+			"fieldtype": "Link",
+			"label": "Production SKF",
+			"options": "Statistical Key Figure",
+			"description": "SKF to post output quantity to on Process Order submit"
+		},
+		{
+			"fieldname": "standard_output_qty",
+			"fieldtype": "Float",
+			"label": "Standard Output Qty",
+			"description": "Expected monthly output (for reference/benchmarking)"
+		},
+		{
+			"fieldname": "section_break_inputs",
+			"fieldtype": "Section Break",
+			"label": "Input Materials"
+		},
+		{
+			"fieldname": "input_items",
+			"fieldtype": "Table",
+			"label": "Input Materials",
+			"options": "Production Recipe Input"
+		},
+		{
+			"fieldname": "section_break_predecessors",
+			"fieldtype": "Section Break",
+			"label": "Predecessor Recipes",
+			"collapsible": 1,
+			"description": "Recipes whose output feeds as input to this recipe"
+		},
+		{
+			"fieldname": "predecessor_recipes",
+			"fieldtype": "Table",
+			"label": "Predecessor Recipes",
+			"options": "Production Recipe Link"
+		},
+		{
+			"fieldname": "section_break_successors",
+			"fieldtype": "Section Break",
+			"label": "Successor Recipes",
+			"collapsible": 1,
+			"description": "Recipes that consume this recipe's output"
+		},
+		{
+			"fieldname": "successor_recipes",
+			"fieldtype": "Table",
+			"label": "Successor Recipes",
+			"options": "Production Recipe Link"
+		},
+		{
+			"fieldname": "section_break_notes",
+			"fieldtype": "Section Break",
+			"label": "Notes",
+			"collapsible": 1
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Small Text",
+			"label": "Description"
+		}
+	],
+	"links": [
+		{
+			"link_doctype": "Process Order",
+			"link_fieldname": "production_recipe"
+		}
+	],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Production Recipe",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1
+		}
+	],
+	"sort_field": "phase_sequence",
+	"sort_order": "ASC",
+	"states": [],
+	"title_field": "recipe_name",
+	"track_changes": 1
+}
