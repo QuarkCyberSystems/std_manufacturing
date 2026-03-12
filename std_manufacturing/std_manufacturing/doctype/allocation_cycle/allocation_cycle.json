@@ -1,0 +1,172 @@
+{
+	"actions": [],
+	"autoname": "format:CYCLE-{cycle_number}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"cycle_number",
+		"cycle_name",
+		"co_document_type",
+		"column_break_1",
+		"sender_cost_center",
+		"secondary_cost_element",
+		"is_active",
+		"section_break_tracing",
+		"tracing_type",
+		"tracing_skf",
+		"column_break_tracing",
+		"intermediate_item",
+		"description",
+		"section_break_receivers",
+		"receivers"
+	],
+	"fields": [
+		{
+			"fieldname": "cycle_number",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Cycle Number",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"fieldname": "cycle_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Cycle Name",
+			"reqd": 1
+		},
+		{
+			"default": "Assessment",
+			"fieldname": "co_document_type",
+			"fieldtype": "Select",
+			"label": "CO Document Type",
+			"options": "Assessment\nDistribution",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "sender_cost_center",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Sender Cost Center",
+			"options": "Cost Center",
+			"reqd": 1
+		},
+		{
+			"fieldname": "secondary_cost_element",
+			"fieldtype": "Link",
+			"label": "Secondary Cost Element",
+			"options": "Cost Element",
+			"reqd": 1
+		},
+		{
+			"default": 1,
+			"fieldname": "is_active",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Active"
+		},
+		{
+			"fieldname": "section_break_tracing",
+			"fieldtype": "Section Break",
+			"label": "Tracing Configuration"
+		},
+		{
+			"default": "Fixed Percentage",
+			"fieldname": "tracing_type",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Tracing Type",
+			"options": "Fixed Percentage\nSKF-Based\nProduction Ratio",
+			"reqd": 1
+		},
+		{
+			"depends_on": "eval:doc.tracing_type=='SKF-Based'",
+			"fieldname": "tracing_skf",
+			"fieldtype": "Link",
+			"label": "Tracing SKF",
+			"mandatory_depends_on": "eval:doc.tracing_type=='SKF-Based'",
+			"options": "Statistical Key Figure"
+		},
+		{
+			"fieldname": "column_break_tracing",
+			"fieldtype": "Column Break"
+		},
+		{
+			"depends_on": "eval:doc.tracing_type=='Production Ratio'",
+			"fieldname": "intermediate_item",
+			"fieldtype": "Link",
+			"label": "Intermediate Item",
+			"mandatory_depends_on": "eval:doc.tracing_type=='Production Ratio'",
+			"options": "Item"
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Small Text",
+			"label": "Description"
+		},
+		{
+			"fieldname": "section_break_receivers",
+			"fieldtype": "Section Break",
+			"label": "Receivers"
+		},
+		{
+			"fieldname": "receivers",
+			"fieldtype": "Table",
+			"label": "Receivers",
+			"options": "Allocation Cycle Receiver",
+			"reqd": 1
+		}
+	],
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Allocation Cycle",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1
+		}
+	],
+	"sort_field": "cycle_number",
+	"sort_order": "ASC",
+	"states": [],
+	"track_changes": 1
+}

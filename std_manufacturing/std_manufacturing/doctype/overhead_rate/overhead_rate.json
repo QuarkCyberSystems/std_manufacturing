@@ -1,0 +1,128 @@
+{
+	"actions": [],
+	"autoname": "format:{overhead_name}-{fiscal_year}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"overhead_name",
+		"cost_element_group",
+		"column_break_1",
+		"standard_pct",
+		"actual_pct",
+		"section_break_2",
+		"fiscal_year",
+		"company",
+		"column_break_2",
+		"status"
+	],
+	"fields": [
+		{
+			"fieldname": "overhead_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Overhead Name",
+			"reqd": 1
+		},
+		{
+			"fieldname": "cost_element_group",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Cost Element Group",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "standard_pct",
+			"fieldtype": "Percent",
+			"in_list_view": 1,
+			"label": "Standard %",
+			"reqd": 1
+		},
+		{
+			"fieldname": "actual_pct",
+			"fieldtype": "Percent",
+			"label": "Actual %",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_2",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "fiscal_year",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Fiscal Year",
+			"options": "Fiscal Year",
+			"reqd": 1
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"label": "Company",
+			"options": "Company",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Active",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"label": "Status",
+			"options": "Active\nInactive"
+		}
+	],
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Overhead Rate",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "ASC",
+	"states": [],
+	"track_changes": 1
+}

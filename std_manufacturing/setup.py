@@ -72,6 +72,26 @@ CUSTOM_FIELDS = {
 			"description": "Default Purchase Price Variance account for Standard Cost items",
 		},
 	],
+	"Account": [
+		{
+			"fieldname": "custom_cost_element",
+			"fieldtype": "Link",
+			"label": "Cost Element",
+			"options": "Cost Element",
+			"insert_after": "account_type",
+			"description": "Maps this GL Account to a CO Cost Element for controlling postings",
+		},
+	],
+	"Job Card": [
+		{
+			"fieldname": "custom_kwh_consumed",
+			"fieldtype": "Float",
+			"label": "KWH Consumed",
+			"insert_after": "total_completed_qty",
+			"default": "0",
+			"description": "Electricity consumed during this job (KWH)",
+		},
+	],
 }
 
 

@@ -1,0 +1,92 @@
+{
+	"actions": [],
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"company",
+		"co_clearing_cost_center",
+		"column_break_1",
+		"default_co_posting_date_basis",
+		"section_break_2",
+		"warn_on_unmapped_accounts",
+		"block_allocation_if_fi_open"
+	],
+	"fields": [
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"label": "Company",
+			"options": "Company",
+			"reqd": 1
+		},
+		{
+			"fieldname": "co_clearing_cost_center",
+			"fieldtype": "Link",
+			"label": "CO Clearing Cost Center",
+			"options": "Cost Center",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Last Day of Period",
+			"fieldname": "default_co_posting_date_basis",
+			"fieldtype": "Select",
+			"label": "Default CO Posting Date Basis",
+			"options": "Last Day of Period\nActual Posting Date",
+			"reqd": 1
+		},
+		{
+			"fieldname": "section_break_2",
+			"fieldtype": "Section Break",
+			"label": "Options"
+		},
+		{
+			"default": 1,
+			"fieldname": "warn_on_unmapped_accounts",
+			"fieldtype": "Check",
+			"label": "Warn on Unmapped GL Accounts"
+		},
+		{
+			"default": 1,
+			"fieldname": "block_allocation_if_fi_open",
+			"fieldtype": "Check",
+			"label": "Block Allocation if FI Period Open"
+		}
+	],
+	"issingle": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Controlling Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Accounts Manager",
+			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Accounts User"
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "ASC",
+	"states": [],
+	"track_changes": 1
+}

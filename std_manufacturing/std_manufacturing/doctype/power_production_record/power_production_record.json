@@ -1,0 +1,211 @@
+{
+	"actions": [],
+	"autoname": "format:PWR-{costing_period}",
+	"creation": "2026-03-12 00:00:00",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"costing_period",
+		"period_label",
+		"column_break_1",
+		"start_date",
+		"end_date",
+		"section_break_gen",
+		"total_kwh_generated",
+		"dewa_kwh_purchased",
+		"column_break_gen2",
+		"total_kwh_pool",
+		"total_kwh_consumed",
+		"general_service_kwh",
+		"general_service_cc",
+		"section_break_flags",
+		"skf_entries_posted",
+		"column_break_flags",
+		"remarks",
+		"section_break_detail",
+		"kwh_consumption_table",
+		"amended_from"
+	],
+	"fields": [
+		{
+			"fieldname": "costing_period",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Costing Period",
+			"options": "Costing Period",
+			"reqd": 1,
+			"unique": 1
+		},
+		{
+			"fetch_from": "costing_period.period_name",
+			"fieldname": "period_label",
+			"fieldtype": "Data",
+			"label": "Period Label",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fetch_from": "costing_period.period_start",
+			"fieldname": "start_date",
+			"fieldtype": "Date",
+			"label": "Start Date",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "costing_period.period_end",
+			"fieldname": "end_date",
+			"fieldtype": "Date",
+			"label": "End Date",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_gen",
+			"fieldtype": "Section Break",
+			"label": "Generation & Consumption"
+		},
+		{
+			"fieldname": "total_kwh_generated",
+			"fieldtype": "Float",
+			"in_list_view": 1,
+			"label": "Total KWH Generated",
+			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "dewa_kwh_purchased",
+			"fieldtype": "Float",
+			"label": "DEWA KWH Purchased"
+		},
+		{
+			"fieldname": "column_break_gen2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "total_kwh_pool",
+			"fieldtype": "Float",
+			"in_list_view": 1,
+			"label": "Total KWH Pool",
+			"read_only": 1
+		},
+		{
+			"fieldname": "total_kwh_consumed",
+			"fieldtype": "Float",
+			"label": "Total KWH Consumed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "general_service_kwh",
+			"fieldtype": "Float",
+			"label": "General Service KWH",
+			"read_only": 1
+		},
+		{
+			"fieldname": "general_service_cc",
+			"fieldtype": "Link",
+			"label": "General Service Cost Center",
+			"options": "Cost Center",
+			"reqd": 1
+		},
+		{
+			"fieldname": "section_break_flags",
+			"fieldtype": "Section Break"
+		},
+		{
+			"default": 0,
+			"fieldname": "skf_entries_posted",
+			"fieldtype": "Check",
+			"label": "SKF Entries Posted",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_flags",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks"
+		},
+		{
+			"fieldname": "section_break_detail",
+			"fieldtype": "Section Break",
+			"label": "KWH Consumption by Cost Center"
+		},
+		{
+			"fieldname": "kwh_consumption_table",
+			"fieldtype": "Table",
+			"label": "KWH Consumption",
+			"options": "Power Production CC Detail",
+			"reqd": 1
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Power Production Record",
+			"print_hide": 1,
+			"read_only": 1
+		}
+	],
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-03-12 00:00:00",
+	"modified_by": "Administrator",
+	"module": "Std Manufacturing",
+	"name": "Power Production Record",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"amend": 1,
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		},
+		{
+			"amend": 1,
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Accounts User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

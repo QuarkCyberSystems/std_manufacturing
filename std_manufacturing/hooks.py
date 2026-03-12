@@ -11,15 +11,14 @@ after_install = "std_manufacturing.setup.setup_custom_fields"
 after_migrate = "std_manufacturing.setup.setup_custom_fields"
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "std_manufacturing",
-# 		"logo": "/assets/std_manufacturing/logo.png",
-# 		"title": "Std Manufacturing",
-# 		"route": "/std_manufacturing",
-# 		"has_permission": "std_manufacturing.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "std_manufacturing",
+		"logo": "/assets/std_manufacturing/logo.png",
+		"title": "Standard Costing",
+		"route": "/app/standard-costing",
+	}
+]
 
 # Includes in <head>
 # ------------------
