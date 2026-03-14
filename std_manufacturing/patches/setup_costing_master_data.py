@@ -3,6 +3,9 @@
 Creates cost centers, cost elements, allocation cycles, SKF masters,
 and overhead rates based on SAP Costing Cycle.xlsx reference data.
 
+Cost center codes match SAP exactly (e.g., R101P5110A, R10100900P).
+Allocation cycles match SAP's 12 cycles (multi-sender cycles split into sub-cycles).
+
 Run with: bench --site <site> execute std_manufacturing.patches.setup_costing_master_data.execute
 """
 
@@ -11,52 +14,89 @@ import frappe
 COMPANY = "Badia Cement PSJ"
 COMPANY_ABBR = "BCP"
 
-# Cost Centers: (code, name, parent_cc_name, is_group)
+# ─── Cost Centers ────────────────────────────────────────────────────────────
+# SAP codes from Costing Cycle.xlsx "References" sheet.
+# Format: (sap_code, description, parent_group, is_group)
+
 COST_CENTERS = [
 	# Groups
 	("0000", "Production", None, 1),
 	("0001", "Support Services", None, 1),
-	("0002", "Utilities", None, 1),
-	("0003", "Overheads", None, 1),
-	("0004", "Commercial", None, 1),
+	("0002", "Quarry", "Production", 1),
+	("0003", "Crusher", "Production", 1),
+	("0004", "Mill", "Production", 1),
+	("0005", "Kiln Area", "Production", 1),
+	("0006", "Cement Area", "Production", 1),
+	("0007", "Packing Area", "Production", 1),
+	("0008", "Power", "Support Services", 1),
+	("0009", "General", "Support Services", 1),
+	("0010", "Commercial", None, 1),
 
-	# Production CCs
-	("210100", "Quarry Operations", "Production", 0),
-	("220100", "Crusher", "Production", 0),
-	("230100", "Raw Mill", "Production", 0),
-	("230200", "Coal Mill", "Production", 0),
-	("240100", "Kiln", "Production", 0),
-	("250100", "Cement Mill", "Production", 0),
-	("260100", "Packing", "Production", 0),
+	# ── Quarry CCs ──
+	("R101P5110A", "Blasted Lim Quarry", "Quarry", 0),
+	("R101P5120A", "Limestone Mined", "Quarry", 0),
+	("R101P5190A", "Gen Serv Lim Quarry", "Quarry", 0),
+	("R101P6100A", "Blasted Bas Quarry", "Quarry", 0),
+	("R101P6190A", "Gen Serv Bas Quarry", "Quarry", 0),
+	("R101P6200A", "Basalt Mined", "Quarry", 0),
 
-	# Support CCs
-	("410100", "Workshop Maintenance", "Support Services", 0),
-	("410200", "Electrical Maintenance", "Support Services", 0),
-	("410300", "Civil Maintenance", "Support Services", 0),
-	("420100", "Heavy Equipment", "Support Services", 0),
-	("430100", "Laboratory", "Support Services", 0),
-	("440100", "Plant Administration", "Support Services", 0),
-	("440300", "Safety", "Support Services", 0),
-	("610100", "Stores", "Support Services", 0),
+	# ── Crusher CCs ──
+	("R101P4100A", "Limestone Crusher", "Crusher", 0),
+	("R101P4110A", "Basalt Crusher", "Crusher", 0),
+	("R101P4120A", "Limest Crushed Dep", "Crusher", 0),
+	("R101P4130A", "Basalt Crushed Dep", "Crusher", 0),
+	("R101P4500A", "Sand Deposit", "Crusher", 0),
 
-	# Utility CCs
-	("310100", "Power Plant", "Utilities", 0),
-	("320100", "Water Treatment", "Utilities", 0),
+	# ── Mill CCs ──
+	("R101P0700P", "Coal Mill", "Mill", 0),
+	("R101P4700A", "Coal and Petcoke Dep", "Mill", 0),
+	("R101P4710A", "Circular Storage Mix", "Mill", 0),
+	("R101P0800P", "Raw Mill", "Mill", 0),
+	("R101P0810P", "Gypsum Crusher", "Mill", 0),
+	("R101P0820P", "Additive Storage", "Mill", 0),
 
-	# Overhead CCs
-	("510100", "Production Overhead", "Overheads", 0),
-	("510200", "Maintenance Overhead", "Overheads", 0),
-	("510300", "Admin Overhead", "Overheads", 0),
+	# ── Kiln Area CCs ──
+	("R101P0300C", "Kiln", "Kiln Area", 0),
+	("R101P0310C", "Clinker Silo", "Kiln Area", 0),
 
-	# Commercial CCs
-	("710100", "Sales and Distribution", "Commercial", 0),
-	("720100", "Commercial Administration", "Commercial", 0),
-	("810100", "General Administration", "Commercial", 0),
+	# ── Cement Area CCs ──
+	("R101P0400D", "Cement Mill", "Cement Area", 0),
+	("R101P0410D", "Cement Silos", "Cement Area", 0),
+
+	# ── Packing Area CCs ──
+	("R101P0600F", "Bulk Loading", "Packing Area", 0),
+	("R101P0610F", "Bag Pack and Loading", "Packing Area", 0),
+
+	# ── Power CCs ──
+	("R10100900P", "Power HFO and LFO", "Power", 0),
+	("R10100930N", "Power Subc Wartsila", "Power", 0),
+	("R10100940N", "Power Oper Wartsila", "Power", 0),
+	("R10100950N", "Power Maint Wartsila", "Power", 0),
+
+	# ── General / Support CCs ──
+	("R10100900M", "Plant Maint Internal", "General", 0),
+	("R10100910M", "Plant Maint Internal 2", "General", 0),
+	("R10100A10S", "General Services", "General", 0),
+	("R10100A20S", "HSE Manager", "General", 0),
+	("R10100A30S", "Production Manager", "General", 0),
+	("R10100A40S", "Housing Colony", "General", 0),
+	("R10100A50S", "Laboratory", "General", 0),
+
+	# ── Commercial CCs ──
+	("R901001000", "CEO", "Commercial", 0),
+	("R901001100", "Sales Dept", "Commercial", 0),
+	("R901002100", "Finance Dept", "Commercial", 0),
+	("R901002200", "IT Dept", "Commercial", 0),
+
+	# ── Special CCs ──
+	("R101P9001A", "Inventory Reval", "Production", 0),
+	("R101P9002A", "Out of Prod Cost", "Production", 0),
 ]
 
 # Cost Elements: (code, name, type, secondary_category)
 COST_ELEMENTS = [
-	# Primary (will need GL account mapping later)
+	# Primary (need GL account mapping)
+	("CE-MATL", "Materials (Stock Adjustment)", "Primary", None),
 	("CE-MAT-RAW", "Raw Materials", "Primary", None),
 	("CE-MAT-FUEL", "Fuel Materials", "Primary", None),
 	("CE-MAT-SPARE", "Spare Parts", "Primary", None),
@@ -70,23 +110,24 @@ COST_ELEMENTS = [
 	("CE-RENT", "Rent & Lease", "Primary", None),
 	("CE-OTHER", "Other Expenses", "Primary", None),
 
-	# Secondary (allocation results)
+	# Secondary (allocation results) — match SAP cycle names
+	("CE-ALLOC-WARTSILA", "Wartsila Subcontract Allocation", "Secondary", "Assessment"),
 	("CE-ALLOC-MAINT", "Maintenance Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-ELEC", "Electrical Maintenance Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-CIVIL", "Civil Maintenance Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-HEAVY", "Heavy Equipment Allocation", "Secondary", "Assessment"),
+	("CE-ALLOC-WARTSILA-M", "Wartsila Maint to Oper", "Secondary", "Assessment"),
+	("CE-ALLOC-WARTSILA-O", "Wartsila Oper to Power", "Secondary", "Assessment"),
 	("CE-ALLOC-PWR", "Power Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-WATER", "Water Treatment Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-LAB", "Laboratory Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-ADMIN", "Plant Admin Allocation", "Secondary", "Assessment"),
-	("CE-ALLOC-QUARRY", "Quarry to Crusher", "Secondary", "Distribution"),
-	("CE-ALLOC-CRUSH", "Crusher to Raw Mill", "Secondary", "Distribution"),
-	("CE-ALLOC-RAWML", "Raw Mill to Kiln", "Secondary", "Distribution"),
-	("CE-ALLOC-KILN", "Kiln to Cement Mill", "Secondary", "Distribution"),
-	("CE-ALLOC-CEMNT", "Cement Mill to Packing", "Secondary", "Distribution"),
+	("CE-ALLOC-GENERAL", "General Services Allocation", "Secondary", "Assessment"),
+	("CE-ALLOC-BAS-GS", "Basalt Gen Serv Allocation", "Secondary", "Distribution"),
+	("CE-ALLOC-LIM-GS", "Limestone Gen Serv Allocation", "Secondary", "Distribution"),
+	("CE-ALLOC-CRUSH-DEP", "Crusher Deposit Allocation", "Secondary", "Distribution"),
+	("CE-ALLOC-COAL-DEP", "Coal Deposit Allocation", "Secondary", "Distribution"),
+	("CE-ALLOC-CLINKER", "Clinker Silo Allocation", "Secondary", "Distribution"),
+	("CE-ALLOC-CEMENT", "Cement Silo Allocation", "Secondary", "Distribution"),
+	# Fuel revaluation
+	("CE-FUEL-REVAL", "Fuel Revaluation", "Secondary", "Assessment"),
 ]
 
-# Statistical Key Figures
+# ─── Statistical Key Figures ─────────────────────────────────────────────────
 SKF_MASTERS = [
 	("KWH-TOTAL", "Total KWH Consumed", "Energy", "KWh"),
 	("TONS-CRUSHED", "Tons Crushed Material", "Production Quantity", "Kg"),
@@ -96,52 +137,103 @@ SKF_MASTERS = [
 	("TONS-PACKED", "Tons Packed", "Production Quantity", "Kg"),
 ]
 
-# Allocation Cycles: (number, name, sender_cc_code, tracing_type, cost_element_code, co_doc_type, skf_code, receivers)
-# receivers: list of (cc_code, fixed_pct) — pct is 0 for SKF/Production Ratio
+# ─── Allocation Cycles ──────────────────────────────────────────────────────
+# SAP 12 cycles from Costing Cycle.xlsx "Cycles" sheet.
+# Multi-sender cycles are split into sub-cycles (e.g., 2.1 and 2.2).
+# Format: (number, name, sender_cc_code, tracing_type, cost_element, co_doc_type, skf_code, receivers)
+
 ALLOCATION_CYCLES = [
-	(1, "Workshop Maintenance", "410100", "Fixed Percentage", "CE-ALLOC-MAINT", "Assessment", None, [
-		("220100", 10), ("230100", 15), ("230200", 10), ("240100", 25),
-		("250100", 20), ("260100", 10), ("310100", 10),
+	# Cycle 1: Power Subc Wartsila → 70% Oper, 30% Maint
+	(1, "Power Subc Wartsila Split", "R10100930N", "Fixed Percentage", "CE-ALLOC-WARTSILA", "Assessment", None, [
+		("R10100940N", 70), ("R10100950N", 30),
 	]),
-	(2, "Electrical Maintenance", "410200", "Fixed Percentage", "CE-ALLOC-ELEC", "Assessment", None, [
-		("220100", 10), ("230100", 15), ("230200", 10), ("240100", 20),
-		("250100", 25), ("260100", 10), ("310100", 10),
+
+	# Cycle 2: Plant Maint Internal (2 senders) → 75% Kiln, 25% Cement Mill
+	(2, "Plant Maint Internal to Kiln/CM", "R10100900M", "Fixed Percentage", "CE-ALLOC-MAINT", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(3, "Civil Maintenance", "410300", "Fixed Percentage", "CE-ALLOC-CIVIL", "Assessment", None, [
-		("220100", 10), ("230100", 15), ("230200", 5), ("240100", 30),
-		("250100", 20), ("260100", 10), ("310100", 10),
+	(3, "Plant Maint Internal 2 to Kiln/CM", "R10100910M", "Fixed Percentage", "CE-ALLOC-MAINT", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(4, "Heavy Equipment", "420100", "Fixed Percentage", "CE-ALLOC-HEAVY", "Assessment", None, [
-		("210100", 70), ("220100", 30),
+
+	# Cycle 3: Power Maint Wartsila → Power Oper Wartsila (100%)
+	(4, "Power Maint to Power Oper", "R10100950N", "Fixed Percentage", "CE-ALLOC-WARTSILA-M", "Assessment", None, [
+		("R10100940N", 100),
 	]),
-	(5, "Power Plant", "310100", "SKF-Based", "CE-ALLOC-PWR", "Assessment", "KWH-TOTAL", [
-		("220100", 0), ("230100", 0), ("230200", 0), ("240100", 0),
-		("250100", 0), ("260100", 0), ("320100", 0),
+
+	# Cycle 4: Power Oper Wartsila → Power HFO & LFO (100%)
+	(5, "Power Oper to Power HFO", "R10100940N", "Fixed Percentage", "CE-ALLOC-WARTSILA-O", "Assessment", None, [
+		("R10100900P", 100),
 	]),
-	(6, "Water Treatment", "320100", "Fixed Percentage", "CE-ALLOC-WATER", "Assessment", None, [
-		("230100", 20), ("240100", 40), ("250100", 20), ("260100", 10), ("210100", 10),
+
+	# Cycle 5: Power HFO & LFO → 9 receivers based on KWH
+	(6, "Power KWH Allocation", "R10100900P", "SKF-Based", "CE-ALLOC-PWR", "Assessment", "KWH-TOTAL", [
+		("R101P4100A", 0),   # Limestone crusher
+		("R101P4110A", 0),   # Basalt crusher
+		("R101P0700P", 0),   # Coal mill
+		("R101P0800P", 0),   # Raw mill
+		("R101P0300C", 0),   # Kiln
+		("R101P0400D", 0),   # Cement mill
+		("R101P0610F", 0),   # Bag pack
+		("R10100A10S", 0),   # General services (balance)
+		("R101P0310C", 0),   # Clinker bins (PACKER area KWH)
 	]),
-	(7, "Laboratory", "430100", "Fixed Percentage", "CE-ALLOC-LAB", "Assessment", None, [
-		("230100", 60), ("250100", 40),
+
+	# Cycle 6: General Services (5 senders) → 75% Kiln, 25% Cement Mill
+	(7, "General Services to Kiln/CM", "R10100A10S", "Fixed Percentage", "CE-ALLOC-GENERAL", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(8, "Plant Administration", "440100", "Fixed Percentage", "CE-ALLOC-ADMIN", "Assessment", None, [
-		("210100", 5), ("220100", 10), ("230100", 15), ("230200", 10),
-		("240100", 25), ("250100", 20), ("260100", 15),
+	(8, "HSE Manager to Kiln/CM", "R10100A20S", "Fixed Percentage", "CE-ALLOC-GENERAL", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(9, "Quarry to Crusher", "210100", "Production Ratio", "CE-ALLOC-QUARRY", "Distribution", None, [
-		("220100", 0),
+	(9, "Production Manager to Kiln/CM", "R10100A30S", "Fixed Percentage", "CE-ALLOC-GENERAL", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(10, "Crusher to Raw Mill", "220100", "Production Ratio", "CE-ALLOC-CRUSH", "Distribution", None, [
-		("230100", 0),
+	(10, "Housing Colony to Kiln/CM", "R10100A40S", "Fixed Percentage", "CE-ALLOC-GENERAL", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(11, "Raw Mill to Kiln", "230100", "Production Ratio", "CE-ALLOC-RAWML", "Distribution", None, [
-		("240100", 0),
+	(11, "Laboratory to Kiln/CM", "R10100A50S", "Fixed Percentage", "CE-ALLOC-GENERAL", "Assessment", None, [
+		("R101P0300C", 75), ("R101P0400D", 25),
 	]),
-	(12, "Kiln to Cement Mill", "240100", "Production Ratio", "CE-ALLOC-KILN", "Distribution", None, [
-		("250100", 0),
+
+	# Cycle 7: Gen Serv Bas Quarry → Blasted Bas Quarry (100%)
+	(12, "Basalt Gen Serv to Blasted", "R101P6190A", "Fixed Percentage", "CE-ALLOC-BAS-GS", "Distribution", None, [
+		("R101P6100A", 100),
 	]),
-	(13, "Cement Mill to Packing", "250100", "Production Ratio", "CE-ALLOC-CEMNT", "Distribution", None, [
-		("260100", 0),
+
+	# Cycle 8: Gen Serv Lim Quarry → Blasted Lim Quarry (100%)
+	(13, "Limestone Gen Serv to Blasted", "R101P5190A", "Fixed Percentage", "CE-ALLOC-LIM-GS", "Distribution", None, [
+		("R101P5110A", 100),
+	]),
+
+	# Cycle 9: Crusher deposits (3 senders) → Raw Mill (100%)
+	(14, "Limest Crushed Dep to Raw Mill", "R101P4120A", "Fixed Percentage", "CE-ALLOC-CRUSH-DEP", "Distribution", None, [
+		("R101P0800P", 100),
+	]),
+	(15, "Basalt Crushed Dep to Raw Mill", "R101P4130A", "Fixed Percentage", "CE-ALLOC-CRUSH-DEP", "Distribution", None, [
+		("R101P0800P", 100),
+	]),
+	(16, "Sand Deposit to Raw Mill", "R101P4500A", "Fixed Percentage", "CE-ALLOC-CRUSH-DEP", "Distribution", None, [
+		("R101P0800P", 100),
+	]),
+
+	# Cycle 10: Coal deposits (2 senders) → Coal Mill (100%)
+	(17, "Coal Petcoke Dep to Coal Mill", "R101P4700A", "Fixed Percentage", "CE-ALLOC-COAL-DEP", "Distribution", None, [
+		("R101P0700P", 100),
+	]),
+	(18, "Circular Storage to Coal Mill", "R101P4710A", "Fixed Percentage", "CE-ALLOC-COAL-DEP", "Distribution", None, [
+		("R101P0700P", 100),
+	]),
+
+	# Cycle 11: Clinker Silo → Cement Mill (100%)
+	(19, "Clinker Silo to Cement Mill", "R101P0310C", "Fixed Percentage", "CE-ALLOC-CLINKER", "Distribution", None, [
+		("R101P0400D", 100),
+	]),
+
+	# Cycle 12: Cement Silos → Bulk Loading + Bag Pack (Based on QTY)
+	# For now using Fixed Percentage as approximation — will refine with actual QTY data
+	(20, "Cement Silos to Packing", "R101P0410D", "Fixed Percentage", "CE-ALLOC-CEMENT", "Distribution", None, [
+		("R101P0600F", 5), ("R101P0610F", 95),
 	]),
 ]
 
@@ -153,6 +245,19 @@ OVERHEAD_RATES = [
 	("Other OH", "Other", 5),
 ]
 
+
+# ─── Helper ──────────────────────────────────────────────────────────────────
+
+def _cc_full_name(sap_code):
+	"""Return the full Cost Center name for a SAP code: 'Description - BCP'."""
+	cc_map = {row[0]: row[1] for row in COST_CENTERS}
+	desc = cc_map.get(sap_code)
+	if desc:
+		return f"{desc} - {COMPANY_ABBR}"
+	return sap_code
+
+
+# ─── Execution ───────────────────────────────────────────────────────────────
 
 def execute():
 	"""Create all costing master data."""
@@ -169,7 +274,6 @@ def create_cost_centers():
 	"""Create cost centers from the SAP reference data."""
 	root_cc = f"{COMPANY} - {COMPANY_ABBR}"
 
-	# Ensure root exists
 	if not frappe.db.exists("Cost Center", root_cc):
 		print(f"Root cost center '{root_cc}' not found. Skipping cost center creation.")
 		return
@@ -202,7 +306,6 @@ def create_cost_elements():
 			continue
 
 		if ce_type == "Primary":
-			# Primary cost elements need GL account mapping — skip for now
 			print(f"  Skipped Primary CE: {code} - {name} (needs GL account mapping)")
 			continue
 
@@ -226,7 +329,6 @@ def create_skf_masters():
 		if frappe.db.exists("Statistical Key Figure", code):
 			continue
 
-		# Ensure UOM exists
 		if not frappe.db.exists("UOM", uom_name):
 			uom = frappe.new_doc("UOM")
 			uom.uom_name = uom_name
@@ -247,15 +349,20 @@ def create_skf_masters():
 
 
 def create_allocation_cycles():
-	"""Create allocation cycle definitions."""
+	"""Create allocation cycle definitions matching SAP's 12 cycles."""
 	for (num, name, sender_code, tracing_type, ce_code, co_type, skf_code, receivers) in ALLOCATION_CYCLES:
 		cycle_name = f"CYCLE-{num:03d}"
 		if frappe.db.exists("Allocation Cycle", cycle_name):
 			continue
 
-		sender_cc = f"{_get_cc_name(sender_code)} - {COMPANY_ABBR}"
+		sender_cc = _cc_full_name(sender_code)
 		if not frappe.db.exists("Cost Center", sender_cc):
 			print(f"  Skipping cycle {num}: sender CC {sender_cc} not found")
+			continue
+
+		# Ensure cost element exists
+		if not frappe.db.exists("Cost Element", ce_code):
+			print(f"  Skipping cycle {num}: cost element {ce_code} not found")
 			continue
 
 		cycle = frappe.new_doc("Allocation Cycle")
@@ -271,7 +378,7 @@ def create_allocation_cycles():
 			cycle.tracing_skf = skf_code
 
 		for recv_code, pct in receivers:
-			recv_cc = f"{_get_cc_name(recv_code)} - {COMPANY_ABBR}"
+			recv_cc = _cc_full_name(recv_code)
 			cycle.append("receivers", {
 				"cost_center": recv_cc,
 				"fixed_percentage": pct,
@@ -286,7 +393,6 @@ def create_allocation_cycles():
 
 def create_overhead_rates():
 	"""Create overhead rate definitions."""
-	# Get current fiscal year
 	fiscal_year = frappe.defaults.get_global_default("fiscal_year")
 	if not fiscal_year:
 		print("  No fiscal year set, skipping overhead rates")
@@ -309,9 +415,3 @@ def create_overhead_rates():
 			print(f"  Created OH Rate: {name} ({pct}%)")
 		except Exception as e:
 			print(f"  Error creating OH Rate {name}: {e}")
-
-
-def _get_cc_name(code):
-	"""Map cost center code to name."""
-	cc_map = {row[0]: row[1] for row in COST_CENTERS}
-	return cc_map.get(code, code)

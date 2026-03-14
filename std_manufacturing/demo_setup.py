@@ -1,6 +1,8 @@
 """
-End-to-end demo data setup for the Standard Cost Module.
-Based on source data from /home/frappe/frappe-bench/source_references/Costing Cycle.xlsx
+End-to-end demo data setup matching SAP Costing Cycle.xlsx exactly.
+
+Creates opening inventory, purchases, overhead JEs, process orders, power production,
+and runs the full costing cycle to produce CPUs matching SAP results.
 
 Run via: bench --site badia.localhost execute std_manufacturing.demo_setup.setup_all
 """
@@ -9,84 +11,450 @@ import frappe
 from frappe.utils import flt
 
 
-# ── 1. Items ──────────────────────────────────────────────────────────────────
-# Existing items: RM-120002, RM-120070, RM-120119, RM-120238, RM-120402,
-#                 RM-2000011, RM-2000012, PK-3100061, PK-3100070, OPC Cement 42.5R
+COMPANY = "Badia Cement PSJ"
+COMPANY_ABBR = "BCP"
+WAREHOUSE = f"Stores - {COMPANY_ABBR}"
 
-NEW_ITEMS = [
-	# Quarry raw materials
-	{"item_code": "RM-120417", "item_name": "Basalt/blasted", "item_group": "Raw Material", "stock_uom": "Tonne", "cost_category": "Purchased"},
-	{"item_code": "RM-2000009", "item_name": "Fues Explosive material", "item_group": "Raw Material", "stock_uom": "Kg", "cost_category": "Purchased"},
-	{"item_code": "RM-2000075", "item_name": "Local Dynamite", "item_group": "Raw Material", "stock_uom": "Kg", "cost_category": "Purchased"},
-	{"item_code": "RM-2000141", "item_name": "Electrical Wire 0.5 M.M", "item_group": "Raw Material", "stock_uom": "Meter", "cost_category": "Purchased"},
-	{"item_code": "RM-2000142", "item_name": "Electrical Wire 0.9 M.M", "item_group": "Raw Material", "stock_uom": "Meter", "cost_category": "Purchased"},
-	{"item_code": "RM-2000150", "item_name": "M.M.D.T Fitted Explosive material", "item_group": "Raw Material", "stock_uom": "Kg", "cost_category": "Purchased"},
-	{"item_code": "RM-2000010", "item_name": "CO2 Gas", "item_group": "Raw Material", "stock_uom": "Tonne", "cost_category": "Purchased"},
-	{"item_code": "RM-2000040", "item_name": "Gasoline", "item_group": "Raw Material", "stock_uom": "Litre", "cost_category": "Purchased"},
-	# Packaging
-	{"item_code": "PK-3100080", "item_name": "Bags CEM II 42.5N Gray PP", "item_group": "Raw Material", "stock_uom": "Nos", "cost_category": "Purchased"},
-	{"item_code": "PK-3100090", "item_name": "Bags CEM II 32.5N Blue PP", "item_group": "Raw Material", "stock_uom": "Nos", "cost_category": "Purchased"},
+# ─── CC Helper ───────────────────────────────────────────────────────────────
+
+def cc(sap_code):
+	"""Map SAP cost center code to Frappe CC name."""
+	from std_manufacturing.patches.setup_costing_master_data import _cc_full_name
+	return _cc_full_name(sap_code)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 1. OPENING INVENTORY — from "1-1-2020 - Summary" sheet
+# Format: (item_code, item_name, item_group, stock_uom, opening_qty, opening_value, std_rate)
+# ══════════════════════════════════════════════════════════════════════════════
+
+OPENING_INVENTORY = [
+	# Finished goods
+	("100929", "CEM II Pouzzolana 32.5 N/silos", "Finished Goods", "Tonne", 12638, 243692402.52, 19282.51),
+	("2000004", "CEM II Pouzzolana 32.5 N/Bags", "Finished Goods", "Tonne", 0, 0, 22704.99),
+	("2000100", "CEM II 42,5 N/Bags", "Finished Goods", "Tonne", 0, 0, 24009.95),
+	("2000101", "CEM II 42.5 N / Bulk", "Finished Goods", "Tonne", 26534, 557784187.04, 21021.49),
+
 	# Semi-finished goods
-	{"item_code": "SF-120036", "item_name": "Limestone/mined", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	{"item_code": "SF-120006", "item_name": "Limestone/crushed", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	{"item_code": "SF-120412", "item_name": "Basalt/mined", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	{"item_code": "SF-120413", "item_name": "Basalt/crushed", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	{"item_code": "SF-120124", "item_name": "Solid fuels blend/ground", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	{"item_code": "SF-120083", "item_name": "Raw meal/grey/common", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	{"item_code": "SF-120097", "item_name": "Clinker/grey/common", "item_group": "Sub Assemblies", "stock_uom": "Tonne", "cost_category": "Semi-Finished"},
-	# Finished goods - bulk
-	{"item_code": "FG-2000101", "item_name": "CEM II 42.5 N / Bulk", "item_group": "Finished Goods", "stock_uom": "Tonne", "cost_category": "Finished"},
-	{"item_code": "FG-100929", "item_name": "CEM II Pouzzolana 32.5 N/silos", "item_group": "Finished Goods", "stock_uom": "Tonne", "cost_category": "Finished"},
-	# Finished goods - bagged
-	{"item_code": "FG-2000100", "item_name": "CEM II 42.5 N/Bags", "item_group": "Finished Goods", "stock_uom": "Tonne", "cost_category": "Finished"},
-	{"item_code": "FG-2000004", "item_name": "CEM II Pouzzolana 32.5 N/Bags", "item_group": "Finished Goods", "stock_uom": "Tonne", "cost_category": "Finished"},
+	("120002", "Pouzzolana/ground Fine", "Raw Material", "Tonne", 556667, 4876673097.77, 8760.49),
+	("120006", "Limestone/crushed", "Sub Assemblies", "Tonne", 15167, 18051408.12, 1190.18),
+	("120036", "Limestone/mined", "Sub Assemblies", "Tonne", 1377086, 1280610489.08, 929.94),
+	("120049", "Iron ore/high level", "Raw Material", "Tonne", 4017, 144339123.32, 35932.07),
+	("120070", "Gypsum/dihydrate/mined", "Raw Material", "Tonne", 24893, 203541738.72, 8176.67),
+	("120083", "Raw meal/grey/common", "Sub Assemblies", "Tonne", 7005.56, 19623743.05, 2801.17),
+	("120097", "Clinker/grey/common", "Sub Assemblies", "Tonne", 648138, 11906684927.35, 18370.60),
+	("120119", "Coal/BTZ/ground", "Raw Material", "Tonne", 57421, 4280034303.96, 74537.79),
+	("120124", "Solid fuels blend/ground", "Sub Assemblies", "Tonne", 240, 19814145.42, 82558.94),
+	("120238", "Silica sand", "Raw Material", "Tonne", 37524, 212399291.98, 5660.36),
+	("120402", "Limestone/blasted", "Raw Material", "Tonne", 0, 0, 348.16),
+	("120412", "Basalt/mined", "Sub Assemblies", "Tonne", 230755, 281364579.81, 1219.32),
+	("120413", "Basalt/crushed", "Sub Assemblies", "Tonne", 36055, 65260013.61, 1810.01),
+	("120417", "Basalt/blasted", "Raw Material", "Tonne", 2500, 1132648.08, 453.06),
+
+	# Fuels
+	("2000011", "LFO - Light Fuel Oil", "Raw Material", "Tonne", 116998, 44121038.91, 377.11),
+	("2000012", "HFO - Heavy Fuel Oil", "Raw Material", "Tonne", 9009.90, 2102717121.02, 233378.52),
+	("2000040", "Gasoline", "Raw Material", "Litre", 0, 0, 500.00),
+
+	# Explosives & consumables
+	("2000006", "Amonium Nitrate Explosive", "Raw Material", "Kg", 8.5, 2763.12, 325.07),
+	("2000007", "Dynamite Explosive", "Raw Material", "Kg", 35, 119000, 3400.00),
+	("2000008", "Corde Explosive", "Raw Material", "Kg", 1867, 453054.99, 242.66),
+	("2000009", "Fues Explosive material", "Raw Material", "Kg", 6406, 746559.74, 116.54),
+	("2000010", "CO2 Gas", "Raw Material", "Tonne", 9.91, 3614535.85, 364736.21),
+	("2000060", "Slow Match Explosive", "Raw Material", "Kg", 4000, 80000, 20.00),
+	("2000061", "Normal Fues Explosive", "Raw Material", "Kg", 4000, 120000, 30.00),
+	("2000075", "Local Dynamite", "Raw Material", "Kg", 733, 3181438.52, 4340.30),
+	("2000141", "Electrical Wire 0.5 M.M", "Raw Material", "Meter", 35896, 1550871.03, 43.20),
+	("2000142", "Electrical Wire 0.9 M.M", "Raw Material", "Meter", 14355, 693452.78, 48.31),
+	("2000150", "M.M.D.T Fitted Explosive", "Raw Material", "Kg", 0, 0, 700.00),
+
+	# Packaging
+	("3100051", "Bags CEM II 42.5N G=90 2 layers", "Raw Material", "Nos", 4982, 490022.72, 98.36),
+	("3100061", "Bags CEM II 32.5N PolyPropylene", "Raw Material", "Nos", 987334, 84404445.78, 85.49),
+	("3100070", "Bags CEM II 42.5N PolyPropylene", "Raw Material", "Nos", 1401368, 156706810.66, 111.82),
+	("3100080", "Bags CEM II 42.5N Gray PP", "Raw Material", "Nos", 185427, 22819301.92, 123.06),
+	("3100090", "Bags CEM II 32.5N Blue PP", "Raw Material", "Nos", 556479, 89393871.69, 160.64),
 ]
 
 
-def create_items():
-	"""Create missing items for the production chain."""
-	# Ensure item groups exist
-	for group in ["Sub Assemblies", "Finished Goods"]:
-		if not frappe.db.exists("Item Group", group):
-			frappe.get_doc({"doctype": "Item Group", "item_group_name": group, "parent_item_group": "All Item Groups"}).insert(ignore_permissions=True)
+# ══════════════════════════════════════════════════════════════════════════════
+# 2. PURCHASED MATERIALS — from "Purchased Materials YTD CPU" sheet
+# Format: (item_code, jan_qty, jan_value, feb_qty, feb_value)
+# ══════════════════════════════════════════════════════════════════════════════
 
-	created = 0
-	for item_data in NEW_ITEMS:
-		if frappe.db.exists("Item", item_data["item_code"]):
-			continue
-		doc = frappe.get_doc({
-			"doctype": "Item",
-			"item_code": item_data["item_code"],
-			"item_name": item_data["item_name"],
-			"item_group": item_data["item_group"],
-			"stock_uom": item_data["stock_uom"],
-			"is_stock_item": 1,
-			"custom_valuation_method": "Standard Cost",
-			"custom_cost_category": item_data["cost_category"],
-			"custom_include_in_plcv": 1,
-		})
-		doc.insert(ignore_permissions=True)
-		created += 1
-
-	# Update existing items with cost category if missing
-	for item_code, cat in [
-		("RM-120002", "Purchased"), ("RM-120070", "Purchased"), ("RM-120119", "Purchased"),
-		("RM-120238", "Purchased"), ("RM-120402", "Purchased"), ("RM-2000011", "Purchased"),
-		("RM-2000012", "Purchased"), ("PK-3100061", "Purchased"), ("PK-3100070", "Purchased"),
-	]:
-		if frappe.db.exists("Item", item_code):
-			frappe.db.set_value("Item", item_code, {
-				"custom_cost_category": cat,
-				"custom_include_in_plcv": 1,
-				"custom_valuation_method": "Standard Cost",
-			})
-
-	frappe.db.commit()
-	print(f"Items: {created} created")
+PURCHASES = [
+	("120002", 130266.73, 1172400570, 58123.80, 523114200),
+	("120070", 20995.92, 174266136, 3019.85, 25064755),
+	("120119", 0, 0, 7520.83, 965674572),
+	("120238", 0, 0, 21867.60, 130768248),
+	("120402", 23362.98, 8133966.99, 329466.17, 44068932.87),
+	("2000011", 83773.00, 25040884.00, 224463.00, 102084929.00),
+	("2000012", 3679.00, 812027721.93, 3229.85, 713346410.28),
+	("2000040", 300, 150000, 24014, 16449590),
+	("2000141", 0, 0, 18000, 905400.00),
+	("2000150", 0, 0, 48750, 34125000),
+	("3100061", 910000, 161700000, 732399, 131400000),
+	("3100070", 1010000, 171700000, 1011051, 181800000),
+	("3100080", 1240000, 212130000, 490000, 88200000),
+	("3100090", 440000, 79200000, 50479, 9000000),
+]
 
 
-# ── 2. Production Phases ─────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# 3. OVERHEAD COSTS — from "OH CC" sheet (exact SAP amounts per CC per month)
+# Format: {cc_sap_code: (jan_amount, feb_amount)}
+# ══════════════════════════════════════════════════════════════════════════════
 
+OH_CC = {
+	"R10100900M": (15490975.79, 23762478.38),
+	"R10100900P": (9509342.84, 8896717.79),
+	"R10100930N": (54286998.05, 84842232.46),
+	"R10100A10S": (228557205.71, 230871015.20),
+	"R10100A20S": (2548408.39, 2564944.96),
+	"R10100A30S": (9047615.91, 22001920.89),
+	"R10100A40S": (2476247.42, 4852635.79),
+	"R10100A50S": (5923095.75, 11874286.19),
+	"R101P0300C": (10364224.23, 9695564.62),
+	"R101P0310C": (20019004.01, 21841158.00),
+	"R101P0400D": (4531007.14, 4281033.81),
+	"R101P0410D": (2296533.96, 2148370.47),
+	"R101P0610F": (13655174.26, 12956220.09),
+	"R101P0700P": (1352704.70, 1265433.40),
+	"R101P0800P": (4843208.91, 4530743.81),
+	"R101P0810P": (1475200.96, 1380026.71),
+	"R101P4100A": (34015871.41, 96423665.89),
+	"R101P4110A": (8457764.05, 24173183.99),
+	"R101P4700A": (1656431.28, 1549564.75),
+	"R101P4710A": (1441184.15, 1348204.53),
+	"R101P5110A": (4675601.17, 57826272.08),
+	"R101P5120A": (201619.80, 39352089.75),
+	"R101P5190A": (10193516.25, 9535870.05),
+	"R101P6100A": (761636.55, 16466110.69),
+	"R101P6190A": (4181108.04, 3911359.13),
+	"R101P6200A": (0.00, 17668229.11),
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 4. MAINTENANCE COSTS — from "Maintenance Orders CC" sheet
+# Format: {cc_sap_code: (jan_amount, feb_amount)}
+# ══════════════════════════════════════════════════════════════════════════════
+
+MAINTENANCE_CC = {
+	"R10100900P": (82194990.90, 151705143.03),
+	"R10100A10S": (11386726.69, 15079083.36),
+	"R101P0300C": (2092052.91, 4496195.93),
+	"R101P0400D": (11760630.94, 30487653.45),
+	"R101P0410D": (0.00, 185829.29),
+	"R101P0610F": (4630374.39, 17406229.68),
+	"R101P0700P": (1826683.85, 1105809.72),
+	"R101P0800P": (119182069.68, 29347284.70),
+	"R101P4100A": (772236.46, 10015373.91),
+	"R101P4110A": (4048808.16, 13265543.93),
+	"R101P4120A": (0.00, 201045.88),
+	"R101P4130A": (0.00, 341554.99),
+	"R101P4710A": (0.00, 4315.00),
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. KWH DATA — from "Cycle 5 Exercise" sheet (YTD totals)
+# Map resource codes to SAP CC codes and KWH consumed
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Jan KWH (from KWH Transactions aggregated)
+JAN_KWH = {
+	"R101P4100A": 202208,      # CRUSHR01 = Limestone crusher
+	"R101P4110A": 140757,      # CRUSHR02 = Basalt crusher
+	"R101P0700P": 1039428,     # COAMIV01 = Coal mill
+	"R101P0800P": 4704309,     # RMILLV01 = Raw mill
+	"R101P0300C": 5130598,     # KILN01 = Kiln
+	"R101P0400D": 1226418,     # FINMIB01 = Cement mill (= FEB_YTD 4,708,863 - FEB 3,482,445)
+	"R101P0610F": 2706227,     # PACKER01+02+03 = Bag pack (= FEB_YTD 2,804,584 - FEB 98,357)
+	"R101P0310C": 0,           # Clinker bins
+	"R10100A10S": 524795,      # General services (balance = generated - sum of others)
+}
+JAN_KWH_GENERATED = 15674740  # = FEB_YTD 29,894,950 - FEB 14,220,210
+
+# Feb KWH (from KWH Transactions aggregated)
+FEB_KWH = {
+	"R101P4100A": 188747,
+	"R101P4110A": 130415,
+	"R101P0700P": 978952,
+	"R101P0800P": 4198511,
+	"R101P0300C": 4776975,
+	"R101P0400D": 3482445,
+	"R101P0610F": 98357,       # PACKER01+02+03
+	"R101P0310C": 93534,       # Clinker bins
+	"R10100A10S": 272274,      # General services (= FEB_YTD 797,069 - JAN 524,795)
+}
+FEB_KWH_GENERATED = 14220210
+
+# Feb YTD (from Cycle 5 Exercise - authoritative)
+FEB_YTD_KWH = {
+	"R101P4100A": 390955,
+	"R101P4110A": 271172,
+	"R101P0700P": 2018380,
+	"R101P0800P": 8902820,
+	"R101P0300C": 9907573,
+	"R101P0400D": 4708863,
+	"R101P0610F": 2804584,
+	"R101P0310C": 93534,
+	"R10100A10S": 797069,
+}
+FEB_YTD_KWH_GENERATED = 29894950
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. PROCESS ORDER TRANSACTIONS — from "Process Orders Transactions" sheet
+# Net quantities: production (101-102), consumption (abs(261-262))
+# Format per order: { "output": {material: (jan_qty, feb_qty)},
+#                     "input":  {material: (jan_qty, feb_qty)} }
+# ══════════════════════════════════════════════════════════════════════════════
+
+# SAP Process Order to CC mapping (from References sheet)
+ORDER_CC_MAP = {
+	1001998: "R101P5110A",   # Limestone/blasted → Blasted Lim Quarry
+	1001999: "R101P6100A",   # Basalt/blasted → Blasted Bas Quarry
+	1002000: "R101P5120A",   # Limestone/mined → Limestone Mined
+	1002003: "R101P4100A",   # Limestone crushed → Limestone Crusher
+	1002004: "R101P4110A",   # Basalt crushed → Basalt Crusher
+	1002005: "R101P0700P",   # Solid fuels/blend/ground → Coal Mill
+	1002006: "R101P0800P",   # Raw meal/grey/common → Raw Mill
+	1002007: "R101P0300C",   # Clinker/grey/common → Kiln
+	1002008: "R101P0400D",   # CEM II 42.5 N/silos → Cement Mill
+	1002009: "R101P0400D",   # CEM II 32.5 N/silos → Cement Mill
+	1002010: "R101P0610F",   # CEM II 42.5 N/Bags → Bag Pack
+	1002011: "R101P0610F",   # CEM I 32.5 N/bags → Bag Pack
+	# Power generation orders → Power HFO & LFO CC
+	1002012: "R10100900P",
+	1002013: "R10100900P",
+	1002014: "R10100900P",
+	1002015: "R10100900P",
+	1002016: "R10100900P",
+	1002017: "R10100900P",
+	# Feb orders (same materials, new SAP order numbers)
+	1002018: "R101P5110A",
+	1002019: "R101P6100A",
+	1002020: "R101P5120A",
+	1002021: "R101P6200A",
+	1002022: "R101P4100A",
+	1002023: "R101P4110A",
+	1002024: "R101P0700P",
+	1002025: "R101P0800P",
+	1002026: "R101P0300C",
+	1002027: "R101P0400D",
+	1002028: "R101P0400D",
+	1002029: "R101P0610F",
+	1002030: "R101P0610F",
+	1002031: "R10100900P",
+	1002032: "R10100900P",
+	1002033: "R10100900P",
+	1002034: "R10100900P",
+	1002035: "R10100900P",
+	1002036: "R10100900P",
+}
+
+# Production output quantities (net 101 - 102)
+# {material: (jan_total, feb_total)}
+PRODUCTION_OUTPUT = {
+	"120402": (6220.54, 225777.00),       # Limestone/blasted
+	"120417": (3711.86, 81285.40),        # Basalt/blasted
+	"120036": (390.32, 169507.45),        # Limestone/mined
+	"120006": (222541.60, 226697.05),     # Limestone/crushed
+	"120412": (0, 56799.82),              # Basalt/mined
+	"120413": (42848.26, 48297.06),       # Basalt/crushed
+	"120124": (20556.84, 18826.09),       # Solid fuels/ground
+	"120083": (259550.16, 283076.16),     # Raw meal
+	"120097": (162740.95, 172427.32),     # Clinker
+	"2000101": (70507.97, 54460.21),      # CEM II 42.5N/bulk
+	"100929": (32666.82, 36254.05),       # CEM II 32.5N/silos
+	"2000100": (59873.00, 33038.00),      # CEM II 42.5N/bags
+	"2000004": (31850.00, 29404.00),      # CEM II 32.5N/bags
+}
+
+# Consumption input quantities — by process order, material, month
+# Fuel consumed in power generation (needed for fuel revaluation)
+POWER_FUEL_CONSUMPTION = {
+	# (material, jan_qty, feb_qty)
+	"2000012": (3373.61, 3045.92),   # HFO total across power orders
+	"2000011": (55126.00, 57671.40), # LFO total across power orders
+}
+
+# Fuel consumed in cement production (CEM orders 1002008/1002009 + 1002027/1002028)
+CEMENT_FUEL_CONSUMPTION = {
+	"2000011": (51557.00, 21836.00),  # LFO in cement mill
+	"2000012": (132.85, 116.20),      # HFO in cement mill
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 7. PRODUCTION RECIPES — map output items to cost centers and recipes
+# ══════════════════════════════════════════════════════════════════════════════
+
+RECIPES = [
+	{
+		"recipe_code": "LIME-BLAST",
+		"recipe_name": "Limestone Blasting",
+		"production_phase": "Quarry",
+		"phase_sequence": 10,
+		"cost_center": "R101P5110A",
+		"output_item": "120402",
+		"input_items": [],  # No RM inputs — explosives are in CC overhead
+	},
+	{
+		"recipe_code": "BASALT-BLAST",
+		"recipe_name": "Basalt Blasting",
+		"production_phase": "Quarry",
+		"phase_sequence": 11,
+		"cost_center": "R101P6100A",
+		"output_item": "120417",
+		"input_items": [],  # No RM inputs — explosives are in CC overhead
+	},
+	{
+		"recipe_code": "LIME-MINE",
+		"recipe_name": "Limestone Mining",
+		"production_phase": "Quarry",
+		"phase_sequence": 12,
+		"cost_center": "R101P5120A",
+		"output_item": "120036",
+		"input_items": [
+			{"item_code": "120402", "qty_per_unit": 1.0},
+		],
+	},
+	{
+		"recipe_code": "BASALT-MINE",
+		"recipe_name": "Basalt Mining",
+		"production_phase": "Quarry",
+		"phase_sequence": 13,
+		"cost_center": "R101P6200A",
+		"output_item": "120412",
+		"input_items": [
+			{"item_code": "120417", "qty_per_unit": 0.437},
+		],
+	},
+	{
+		"recipe_code": "LIME-CRUSH",
+		"recipe_name": "Limestone Crushing",
+		"production_phase": "Crusher",
+		"phase_sequence": 20,
+		"cost_center": "R101P4100A",
+		"output_item": "120006",
+		"input_items": [
+			{"item_code": "120402", "qty_per_unit": 0.103},
+			{"item_code": "120036", "qty_per_unit": 0.897},
+		],
+	},
+	{
+		"recipe_code": "BASALT-CRUSH",
+		"recipe_name": "Basalt Crushing",
+		"production_phase": "Crusher",
+		"phase_sequence": 21,
+		"cost_center": "R101P4110A",
+		"output_item": "120413",
+		"input_items": [
+			{"item_code": "120417", "qty_per_unit": 0.300},
+			{"item_code": "120412", "qty_per_unit": 0.700},
+		],
+	},
+	{
+		"recipe_code": "COAL-GRIND",
+		"recipe_name": "Solid Fuel Grinding",
+		"production_phase": "Coal Mill",
+		"phase_sequence": 25,
+		"cost_center": "R101P0700P",
+		"output_item": "120124",
+		"input_items": [
+			{"item_code": "120119", "qty_per_unit": 1.026},
+		],
+	},
+	{
+		"recipe_code": "RAW-MEAL",
+		"recipe_name": "Raw Meal Production",
+		"production_phase": "Raw Mill",
+		"phase_sequence": 30,
+		"cost_center": "R101P0800P",
+		"output_item": "120083",
+		"input_items": [
+			{"item_code": "120006", "qty_per_unit": 0.819},
+			{"item_code": "120413", "qty_per_unit": 0.110},
+			{"item_code": "120070", "qty_per_unit": 0.007},
+			{"item_code": "120238", "qty_per_unit": 0.030},
+		],
+	},
+	{
+		"recipe_code": "CLINKER",
+		"recipe_name": "Clinker Production",
+		"production_phase": "Kiln",
+		"phase_sequence": 40,
+		"cost_center": "R101P0300C",
+		"output_item": "120097",
+		"input_items": [
+			{"item_code": "120083", "qty_per_unit": 1.585},
+			{"item_code": "120124", "qty_per_unit": 0.119},
+			{"item_code": "2000010", "qty_per_unit": 0.000008},
+		],
+	},
+	{
+		"recipe_code": "CEM-425",
+		"recipe_name": "CEM II 42.5N Grinding",
+		"production_phase": "Cement Mill",
+		"phase_sequence": 50,
+		"cost_center": "R101P0400D",
+		"output_item": "2000101",
+		"input_items": [
+			{"item_code": "120097", "qty_per_unit": 0.817},
+			{"item_code": "120002", "qty_per_unit": 0.157},
+			{"item_code": "120070", "qty_per_unit": 0.046},
+			{"item_code": "2000011", "qty_per_unit": 0.403},
+			{"item_code": "2000012", "qty_per_unit": 0.001},
+		],
+	},
+	{
+		"recipe_code": "CEM-325",
+		"recipe_name": "CEM II 32.5N Grinding",
+		"production_phase": "Cement Mill",
+		"phase_sequence": 51,
+		"cost_center": "R101P0400D",
+		"output_item": "100929",
+		"input_items": [
+			{"item_code": "120097", "qty_per_unit": 0.698},
+			{"item_code": "120002", "qty_per_unit": 0.289},
+			{"item_code": "120070", "qty_per_unit": 0.046},
+			{"item_code": "2000011", "qty_per_unit": 0.635},
+			{"item_code": "2000012", "qty_per_unit": 0.001},
+		],
+	},
+	{
+		"recipe_code": "PACK-425",
+		"recipe_name": "CEM II 42.5N Bagging",
+		"production_phase": "Packing",
+		"phase_sequence": 60,
+		"cost_center": "R101P0610F",
+		"output_item": "2000100",
+		"input_items": [
+			{"item_code": "2000101", "qty_per_unit": 1.000},
+			{"item_code": "3100070", "qty_per_unit": 19.94},
+			{"item_code": "3100080", "qty_per_unit": 11.24},
+		],
+	},
+	{
+		"recipe_code": "PACK-325",
+		"recipe_name": "CEM II 32.5N Bagging",
+		"production_phase": "Packing",
+		"phase_sequence": 61,
+		"cost_center": "R101P0610F",
+		"output_item": "2000004",
+		"input_items": [
+			{"item_code": "100929", "qty_per_unit": 1.002},
+			{"item_code": "3100061", "qty_per_unit": 13.42},
+			{"item_code": "3100090", "qty_per_unit": 5.91},
+		],
+	},
+]
+
+# Production Phases
 PHASES = [
 	{"phase_name": "Quarry", "sequence": 10, "description": "Blasting and mining of raw stone"},
 	{"phase_name": "Crusher", "sequence": 20, "description": "Primary and secondary crushing"},
@@ -96,6 +464,61 @@ PHASES = [
 	{"phase_name": "Cement Mill", "sequence": 50, "description": "Cement grinding and blending"},
 	{"phase_name": "Packing", "sequence": 60, "description": "Bagging and bulk loading"},
 ]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# OVERHEAD ACCOUNT MAPPING
+# ══════════════════════════════════════════════════════════════════════════════
+
+OVERHEAD_ACCOUNTS = {
+	"depreciation": "Depreciation - BCP",
+	"maintenance": "Office Maintenance Expenses - BCP",
+	"utilities": "Utility Expenses - BCP",
+	"labor": "Salary - BCP",
+	"admin": "Administrative Expenses - BCP",
+	"misc": "Miscellaneous Expenses - BCP",
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SETUP FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def create_items():
+	"""Create all items from opening inventory with SAP item codes."""
+	for group in ["Sub Assemblies", "Finished Goods", "Raw Material"]:
+		if not frappe.db.exists("Item Group", group):
+			frappe.get_doc({"doctype": "Item Group", "item_group_name": group,
+				"parent_item_group": "All Item Groups"}).insert(ignore_permissions=True)
+
+	created = 0
+	for item_code, item_name, item_group, stock_uom, qty, value, std_rate in OPENING_INVENTORY:
+		if frappe.db.exists("Item", item_code):
+			frappe.db.set_value("Item", item_code, {
+				"custom_cost_category": "Purchased" if item_group == "Raw Material" else ("Semi-Finished" if item_group == "Sub Assemblies" else "Finished"),
+				"custom_include_in_plcv": 1,
+				"custom_valuation_method": "Standard Cost",
+			})
+			continue
+
+		cost_cat = "Purchased" if item_group == "Raw Material" else ("Semi-Finished" if item_group == "Sub Assemblies" else "Finished")
+		doc = frappe.get_doc({
+			"doctype": "Item",
+			"item_code": item_code,
+			"item_name": item_name,
+			"item_group": item_group,
+			"stock_uom": stock_uom,
+			"is_stock_item": 1,
+			"custom_valuation_method": "Standard Cost",
+			"custom_cost_category": cost_cat,
+			"custom_include_in_plcv": 1,
+			"standard_rate": std_rate,
+		})
+		doc.insert(ignore_permissions=True)
+		created += 1
+
+	frappe.db.commit()
+	print(f"Items: {created} created")
 
 
 def create_phases():
@@ -110,521 +533,50 @@ def create_phases():
 	print(f"Production Phases: {created} created")
 
 
-# ── 3. Production Recipes ─────────────────────────────────────────────────────
-
-RECIPES = [
-	{
-		"recipe_code": "LIME-BLAST",
-		"recipe_name": "Limestone Blasting",
-		"production_phase": "Quarry",
-		"phase_sequence": 10,
-		"cost_center": "Quarry Operations - BCP",
-		"output_item": "RM-120402",
-		"input_items": [
-			{"item_code": "RM-2000009", "qty_per_unit": 0.009, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000075", "qty_per_unit": 0.005, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000141", "qty_per_unit": 0.060, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000142", "qty_per_unit": 0.009, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000150", "qty_per_unit": 0.140, "source_warehouse": "Stores - BCP"},
-		],
-		"successor_recipes": ["LIME-MINE", "LIME-CRUSH"],
-	},
-	{
-		"recipe_code": "BASALT-BLAST",
-		"recipe_name": "Basalt Blasting",
-		"production_phase": "Quarry",
-		"phase_sequence": 11,
-		"cost_center": "Quarry Operations - BCP",
-		"output_item": "RM-120417",
-		"input_items": [
-			{"item_code": "RM-2000009", "qty_per_unit": 0.004, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000075", "qty_per_unit": 0.003, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000141", "qty_per_unit": 0.045, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000142", "qty_per_unit": 0.023, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000150", "qty_per_unit": 0.200, "source_warehouse": "Stores - BCP"},
-		],
-		"successor_recipes": ["BASALT-MINE", "BASALT-CRUSH"],
-	},
-	{
-		"recipe_code": "LIME-MINE",
-		"recipe_name": "Limestone Mining",
-		"production_phase": "Quarry",
-		"phase_sequence": 12,
-		"cost_center": "Quarry Operations - BCP",
-		"output_item": "SF-120036",
-		"input_items": [
-			{"item_code": "RM-120402", "qty_per_unit": 0.446, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["LIME-BLAST"],
-		"successor_recipes": ["LIME-CRUSH"],
-	},
-	{
-		"recipe_code": "BASALT-MINE",
-		"recipe_name": "Basalt Mining",
-		"production_phase": "Quarry",
-		"phase_sequence": 13,
-		"cost_center": "Quarry Operations - BCP",
-		"output_item": "SF-120412",
-		"input_items": [
-			{"item_code": "RM-120417", "qty_per_unit": 0.437, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["BASALT-BLAST"],
-		"successor_recipes": ["BASALT-CRUSH"],
-	},
-	{
-		"recipe_code": "LIME-CRUSH",
-		"recipe_name": "Limestone Crushing",
-		"production_phase": "Crusher",
-		"phase_sequence": 20,
-		"cost_center": "Crusher - BCP",
-		"output_item": "SF-120006",
-		"input_items": [
-			{"item_code": "RM-120402", "qty_per_unit": 0.103, "source_warehouse": "Stores - BCP"},
-			{"item_code": "SF-120036", "qty_per_unit": 0.897, "source_warehouse": "Work In Progress - BCP"},
-		],
-		"predecessor_recipes": ["LIME-BLAST", "LIME-MINE"],
-		"successor_recipes": ["RAW-MEAL"],
-	},
-	{
-		"recipe_code": "BASALT-CRUSH",
-		"recipe_name": "Basalt Crushing",
-		"production_phase": "Crusher",
-		"phase_sequence": 21,
-		"cost_center": "Crusher - BCP",
-		"output_item": "SF-120413",
-		"input_items": [
-			{"item_code": "RM-120417", "qty_per_unit": 0.300, "source_warehouse": "Stores - BCP"},
-			{"item_code": "SF-120412", "qty_per_unit": 0.700, "source_warehouse": "Work In Progress - BCP"},
-		],
-		"predecessor_recipes": ["BASALT-BLAST", "BASALT-MINE"],
-		"successor_recipes": ["RAW-MEAL"],
-	},
-	{
-		"recipe_code": "COAL-GRIND",
-		"recipe_name": "Solid Fuel Grinding",
-		"production_phase": "Coal Mill",
-		"phase_sequence": 25,
-		"cost_center": "Coal Mill - BCP",
-		"output_item": "SF-120124",
-		"input_items": [
-			{"item_code": "RM-120119", "qty_per_unit": 1.026, "source_warehouse": "Stores - BCP"},
-		],
-		"successor_recipes": ["CLINKER"],
-	},
-	{
-		"recipe_code": "RAW-MEAL",
-		"recipe_name": "Raw Meal Production",
-		"production_phase": "Raw Mill",
-		"phase_sequence": 30,
-		"cost_center": "Raw Mill - BCP",
-		"output_item": "SF-120083",
-		"input_items": [
-			{"item_code": "SF-120006", "qty_per_unit": 0.819, "source_warehouse": "Work In Progress - BCP"},
-			{"item_code": "SF-120413", "qty_per_unit": 0.110, "source_warehouse": "Work In Progress - BCP"},
-			{"item_code": "RM-120070", "qty_per_unit": 0.007, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-120238", "qty_per_unit": 0.030, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["LIME-CRUSH", "BASALT-CRUSH"],
-		"successor_recipes": ["CLINKER"],
-	},
-	{
-		"recipe_code": "CLINKER",
-		"recipe_name": "Clinker Production",
-		"production_phase": "Kiln",
-		"phase_sequence": 40,
-		"cost_center": "Kiln - BCP",
-		"output_item": "SF-120097",
-		"input_items": [
-			{"item_code": "SF-120083", "qty_per_unit": 1.585, "source_warehouse": "Work In Progress - BCP"},
-			{"item_code": "SF-120124", "qty_per_unit": 0.119, "source_warehouse": "Work In Progress - BCP"},
-			{"item_code": "RM-2000010", "qty_per_unit": 0.000008, "source_warehouse": "Stores - BCP", "is_optional": 1},
-		],
-		"predecessor_recipes": ["RAW-MEAL", "COAL-GRIND"],
-		"successor_recipes": ["CEM-425", "CEM-325"],
-	},
-	{
-		"recipe_code": "CEM-425",
-		"recipe_name": "CEM II 42.5N Grinding",
-		"production_phase": "Cement Mill",
-		"phase_sequence": 50,
-		"cost_center": "Cement Mill - BCP",
-		"output_item": "FG-2000101",
-		"input_items": [
-			{"item_code": "SF-120097", "qty_per_unit": 0.817, "source_warehouse": "Work In Progress - BCP"},
-			{"item_code": "RM-120002", "qty_per_unit": 0.157, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-120070", "qty_per_unit": 0.046, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000011", "qty_per_unit": 0.403, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000012", "qty_per_unit": 0.001, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["CLINKER"],
-		"successor_recipes": ["PACK-425"],
-	},
-	{
-		"recipe_code": "CEM-325",
-		"recipe_name": "CEM II 32.5N Grinding",
-		"production_phase": "Cement Mill",
-		"phase_sequence": 51,
-		"cost_center": "Cement Mill - BCP",
-		"output_item": "FG-100929",
-		"input_items": [
-			{"item_code": "SF-120097", "qty_per_unit": 0.698, "source_warehouse": "Work In Progress - BCP"},
-			{"item_code": "RM-120002", "qty_per_unit": 0.289, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-120070", "qty_per_unit": 0.046, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000011", "qty_per_unit": 0.635, "source_warehouse": "Stores - BCP"},
-			{"item_code": "RM-2000012", "qty_per_unit": 0.001, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["CLINKER"],
-		"successor_recipes": ["PACK-325"],
-	},
-	{
-		"recipe_code": "PACK-425",
-		"recipe_name": "CEM II 42.5N Bagging",
-		"production_phase": "Packing",
-		"phase_sequence": 60,
-		"cost_center": "Packing - BCP",
-		"output_item": "FG-2000100",
-		"input_items": [
-			{"item_code": "FG-2000101", "qty_per_unit": 1.000, "source_warehouse": "Finished Goods - BCP"},
-			{"item_code": "PK-3100070", "qty_per_unit": 19.94, "source_warehouse": "Stores - BCP"},
-			{"item_code": "PK-3100080", "qty_per_unit": 11.24, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["CEM-425"],
-	},
-	{
-		"recipe_code": "PACK-325",
-		"recipe_name": "CEM II 32.5N Bagging",
-		"production_phase": "Packing",
-		"phase_sequence": 61,
-		"cost_center": "Packing - BCP",
-		"output_item": "FG-2000004",
-		"input_items": [
-			{"item_code": "FG-100929", "qty_per_unit": 1.002, "source_warehouse": "Finished Goods - BCP"},
-			{"item_code": "PK-3100061", "qty_per_unit": 13.42, "source_warehouse": "Stores - BCP"},
-			{"item_code": "PK-3100090", "qty_per_unit": 5.91, "source_warehouse": "Stores - BCP"},
-		],
-		"predecessor_recipes": ["CEM-325"],
-	},
-]
-
-
 def create_recipes():
-	"""Create production recipes with inputs and chain links."""
+	"""Create production recipes with inputs."""
 	created = 0
 	for r in RECIPES:
 		recipe_name = f"RECIPE-{r['recipe_code']}"
 		if frappe.db.exists("Production Recipe", recipe_name):
 			continue
 
-		# Fetch output UOM
 		output_uom = frappe.db.get_value("Item", r["output_item"], "stock_uom") or "Tonne"
-
 		doc = frappe.get_doc({
 			"doctype": "Production Recipe",
 			"recipe_code": r["recipe_code"],
 			"recipe_name": r["recipe_name"],
-			"company": "Badia Cement PSJ",
+			"company": COMPANY,
 			"production_phase": r["production_phase"],
 			"phase_sequence": r["phase_sequence"],
-			"cost_center": r["cost_center"],
+			"cost_center": cc(r["cost_center"]),
 			"output_item": r["output_item"],
 			"output_uom": output_uom,
 			"is_active": 1,
 			"input_items": [
-				{
-					"item_code": inp["item_code"],
-					"qty_per_unit": inp["qty_per_unit"],
-					"source_warehouse": inp.get("source_warehouse", "Stores - BCP"),
-					"is_optional": inp.get("is_optional", 0),
-				}
+				{"item_code": inp["item_code"], "qty_per_unit": inp["qty_per_unit"],
+				 "source_warehouse": WAREHOUSE}
 				for inp in r["input_items"]
 			],
 		})
 		doc.insert(ignore_permissions=True)
 		created += 1
 
-	# Second pass: add predecessor/successor links
-	for r in RECIPES:
-		recipe_name = f"RECIPE-{r['recipe_code']}"
-		doc = frappe.get_doc("Production Recipe", recipe_name)
-		changed = False
-
-		for pred_code in r.get("predecessor_recipes", []):
-			pred_name = f"RECIPE-{pred_code}"
-			if not any(row.recipe == pred_name for row in doc.predecessor_recipes):
-				pred_doc = frappe.get_doc("Production Recipe", pred_name)
-				link_item = pred_doc.output_item
-				doc.append("predecessor_recipes", {
-					"recipe": pred_name,
-					"recipe_name": pred_doc.recipe_name,
-					"link_item": link_item,
-				})
-				changed = True
-
-		for succ_code in r.get("successor_recipes", []):
-			succ_name = f"RECIPE-{succ_code}"
-			if frappe.db.exists("Production Recipe", succ_name):
-				if not any(row.recipe == succ_name for row in doc.successor_recipes):
-					succ_doc = frappe.get_doc("Production Recipe", succ_name)
-					doc.append("successor_recipes", {
-						"recipe": succ_name,
-						"recipe_name": succ_doc.recipe_name,
-						"link_item": doc.output_item,
-					})
-					changed = True
-
-		if changed:
-			doc.save(ignore_permissions=True)
-
-	# Link items to their default production recipe
+	# Link items to recipes
 	for r in RECIPES:
 		recipe_name = f"RECIPE-{r['recipe_code']}"
 		frappe.db.set_value("Item", r["output_item"], "custom_production_recipe", recipe_name)
 
 	frappe.db.commit()
-	print(f"Production Recipes: {created} created, links updated")
+	print(f"Production Recipes: {created} created")
 
 
-# ── 4. Process Orders for Jan 2020 ───────────────────────────────────────────
-# SAP Order → Recipe mapping for Jan 2020 (orders 1001998-1002011)
-# Data aggregated from Process Orders Transactions sheet
-
-JAN_PROCESS_ORDERS = [
-	{
-		"recipe_code": "LIME-BLAST",
-		"outputs": [{"item_code": "RM-120402", "qty": 6220.54, "movement_type": "Production"}],
-		"inputs": [],  # Quarry blasting has no material inputs in Jan data
-	},
-	{
-		"recipe_code": "BASALT-BLAST",
-		"outputs": [{"item_code": "RM-120417", "qty": 3711.86, "movement_type": "Production"}],
-		"inputs": [],
-	},
-	{
-		"recipe_code": "LIME-MINE",
-		"outputs": [{"item_code": "SF-120036", "qty": 390.32, "movement_type": "Production"}],
-		"inputs": [{"item_code": "RM-120402", "qty": 390.32, "movement_type": "Consumption"}],
-	},
-	{
-		"recipe_code": "LIME-CRUSH",
-		"outputs": [{"item_code": "SF-120006", "qty": 222541.60, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120036", "qty": 199568.94, "movement_type": "Consumption"},
-			{"item_code": "RM-120402", "qty": 22972.66, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "BASALT-CRUSH",
-		"outputs": [{"item_code": "SF-120413", "qty": 42848.26, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "RM-120417", "qty": 3711.86, "movement_type": "Consumption"},
-			{"item_code": "SF-120412", "qty": 39136.40, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "COAL-GRIND",
-		"outputs": [{"item_code": "SF-120124", "qty": 38876.11, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "RM-120119", "qty": 39896.99, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "RAW-MEAL",
-		"outputs": [{"item_code": "SF-120083", "qty": 479472.59, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120006", "qty": 391403.51, "movement_type": "Consumption"},
-			{"item_code": "SF-120413", "qty": 83556.06, "movement_type": "Consumption"},
-			{"item_code": "RM-120070", "qty": 3444.37, "movement_type": "Consumption"},
-			{"item_code": "RM-120238", "qty": 14335.20, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "CLINKER",
-		"outputs": [{"item_code": "SF-120097", "qty": 300140.62, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120083", "qty": 477223.61, "movement_type": "Consumption"},
-			{"item_code": "SF-120124", "qty": 36024.07, "movement_type": "Consumption"},
-			{"item_code": "RM-2000010", "qty": 2.41, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "CEM-425",
-		"outputs": [{"item_code": "FG-2000101", "qty": 70507.97, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120097", "qty": 57603.90, "movement_type": "Consumption"},
-			{"item_code": "RM-120002", "qty": 11099.65, "movement_type": "Consumption"},
-			{"item_code": "RM-120070", "qty": 3269.97, "movement_type": "Consumption"},
-			{"item_code": "RM-2000011", "qty": 28453.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000012", "qty": 83.08, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "CEM-325",
-		"outputs": [{"item_code": "FG-100929", "qty": 36353.54, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120097", "qty": 25386.04, "movement_type": "Consumption"},
-			{"item_code": "RM-120002", "qty": 10526.58, "movement_type": "Consumption"},
-			{"item_code": "RM-120070", "qty": 1677.92, "movement_type": "Consumption"},
-			{"item_code": "RM-2000011", "qty": 23104.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000012", "qty": 53.62, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "PACK-425",
-		"outputs": [{"item_code": "FG-2000100", "qty": 65926.00, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "FG-2000101", "qty": 65926.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100070", "qty": 576103.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100080", "qty": 740983.00, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "PACK-325",
-		"outputs": [{"item_code": "FG-2000004", "qty": 36428.00, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "FG-100929", "qty": 36428.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100061", "qty": 488790.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100090", "qty": 215347.00, "movement_type": "Consumption"},
-		],
-	},
-]
-
-
-def create_process_orders():
-	"""Create and populate Process Orders for Jan 2020 costing period."""
-	costing_period = "CP-BCP-2020-01-01"
-
-	if not frappe.db.exists("Costing Period", costing_period):
-		print(f"ERROR: Costing Period {costing_period} does not exist")
-		return
-
+def create_standard_cost_rates():
+	"""Create Standard Cost Rate records for all items with opening values."""
 	created = 0
-	for po_data in JAN_PROCESS_ORDERS:
-		recipe_name = f"RECIPE-{po_data['recipe_code']}"
-		po_name = f"PO-{po_data['recipe_code']}-{costing_period}"
-
-		if frappe.db.exists("Process Order", po_name):
-			print(f"  Skipping {po_name} (already exists)")
+	for item_code, _, _, _, _, _, std_rate in OPENING_INVENTORY:
+		if std_rate <= 0:
 			continue
-
-		recipe_doc = frappe.get_doc("Production Recipe", recipe_name)
-
-		doc = frappe.get_doc({
-			"doctype": "Process Order",
-			"costing_period": costing_period,
-			"production_recipe": recipe_name,
-			"cost_center": recipe_doc.cost_center,
-			"output_entries": [
-				{
-					"item_code": out["item_code"],
-					"qty": out["qty"],
-					"posting_date": "2020-01-31",
-					"movement_type": out["movement_type"],
-					"target_warehouse": "Work In Progress - BCP" if out["item_code"].startswith("SF-") else "Finished Goods - BCP" if out["item_code"].startswith("FG-") else "Stores - BCP",
-				}
-				for out in po_data["outputs"]
-			],
-			"input_entries": [
-				{
-					"item_code": inp["item_code"],
-					"qty": inp["qty"],
-					"posting_date": "2020-01-31",
-					"movement_type": inp["movement_type"],
-					"source_warehouse": "Work In Progress - BCP" if inp["item_code"].startswith("SF-") or inp["item_code"].startswith("FG-") else "Stores - BCP",
-				}
-				for inp in po_data["inputs"]
-			],
-			"remarks": f"Demo data from SAP Process Orders Transactions (Jan 2020)",
-		})
-		doc.insert(ignore_permissions=True)
-		created += 1
-		print(f"  Created {po_name}: output={po_data['outputs'][0]['qty']:.2f} {po_data['outputs'][0]['item_code']}")
-
-	frappe.db.commit()
-	print(f"Process Orders: {created} created for {costing_period}")
-
-
-def submit_process_orders():
-	"""Submit all draft Process Orders for Jan 2020."""
-	costing_period = "CP-BCP-2020-01-01"
-	draft_pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": costing_period, "docstatus": 0},
-		pluck="name",
-	)
-
-	submitted = 0
-	for po_name in draft_pos:
-		try:
-			doc = frappe.get_doc("Process Order", po_name)
-			doc.submit()
-			submitted += 1
-			print(f"  Submitted {po_name}")
-		except Exception as e:
-			print(f"  ERROR submitting {po_name}: {e}")
-
-	frappe.db.commit()
-	# Update costing period status
-	frappe.db.set_value("Costing Period", costing_period, "process_order_status", "Created")
-	frappe.db.commit()
-	print(f"Process Orders: {submitted} submitted")
-
-
-def run_production_costing():
-	"""Calculate unit costs for all submitted Process Orders."""
-	from std_manufacturing.api.process_order import calculate_unit_costs
-
-	costing_period = "CP-BCP-2020-01-01"
-	pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": costing_period, "docstatus": 1, "status": "Open"},
-		pluck="name",
-	)
-
-	calculated = 0
-	for po_name in pos:
-		try:
-			calculate_unit_costs(po_name)
-			calculated += 1
-			doc = frappe.get_doc("Process Order", po_name)
-			print(f"  {po_name}: output={doc.total_output_qty:.2f}, cc_balance={doc.cc_balance:.2f}, unit_cost={doc.unit_cost:.2f}")
-		except Exception as e:
-			print(f"  ERROR calculating {po_name}: {e}")
-
-	frappe.db.set_value("Costing Period", costing_period, "production_cost_status", "Calculated")
-	frappe.db.commit()
-	print(f"Production Costing: {calculated} Process Orders calculated")
-
-
-def create_standard_cost_rates_for_produced():
-	"""Create Standard Cost Rates for semi-finished and finished items."""
-	# These are approximate standard rates based on the source data
-	rates = [
-		("RM-120417", 12.94, "Tonne"),
-		("SF-120036", 500.00, "Tonne"),
-		("SF-120006", 700.00, "Tonne"),
-		("SF-120412", 1000.00, "Tonne"),
-		("SF-120413", 1700.00, "Tonne"),
-		("SF-120124", 75000.00, "Tonne"),
-		("SF-120083", 1500.00, "Tonne"),
-		("SF-120097", 3500.00, "Tonne"),
-		("FG-2000101", 8000.00, "Tonne"),
-		("FG-100929", 7000.00, "Tonne"),
-		("FG-2000100", 12000.00, "Tonne"),
-		("FG-2000004", 10000.00, "Tonne"),
-		# Explosives/consumables
-		("RM-2000009", 116.54, "Kg"),
-		("RM-2000075", 4340.30, "Kg"),
-		("RM-2000141", 45.57, "Meter"),
-		("RM-2000142", 48.31, "Meter"),
-		("RM-2000150", 700.00, "Kg"),
-		("RM-2000010", 1000.00, "Tonne"),
-		("RM-2000040", 500.00, "Litre"),
-		("PK-3100080", 164.83, "Nos"),
-		("PK-3100090", 169.19, "Nos"),
-	]
-
-	created = 0
-	for item_code, rate, uom in rates:
 		scr_name = f"SCR-{item_code}-2020-01-01"
 		if frappe.db.exists("Standard Cost Rate", scr_name):
 			continue
@@ -634,7 +586,7 @@ def create_standard_cost_rates_for_produced():
 		doc = frappe.get_doc({
 			"doctype": "Standard Cost Rate",
 			"item_code": item_code,
-			"standard_rate": rate,
+			"standard_rate": std_rate,
 			"effective_from": "2020-01-01",
 			"fiscal_year": "2020",
 			"rate_basis": "Budget",
@@ -645,346 +597,201 @@ def create_standard_cost_rates_for_produced():
 		created += 1
 
 	frappe.db.commit()
-	print(f"Standard Cost Rates: {created} created for produced items")
+	print(f"Standard Cost Rates: {created} created")
 
 
-def create_co_documents_for_production_ccs():
-	"""Create CO Documents for production cost centers based on SAP OH CC data (Jan 2020).
-
-	Source: OH CC sheet + Maintenance Orders CC sheet from Costing Cycle.xlsx
-	Maps SAP cost centers to ERPNext cost centers.
-	"""
-	costing_period = "CP-BCP-2020-01-01"
-
-	# Combined OH CC + Maintenance Orders CC amounts for Jan 2020
-	# Mapped from SAP CC codes to ERPNext CC names
-	cc_amounts = {
-		"Quarry Operations - BCP": 4_675_601.17 + 0,  # R101P5110A OH only (no maint)
-		"Crusher - BCP": 34_015_871.41 + 772_236.46,  # R101P4100A OH + maint
-		"Raw Mill - BCP": 4_843_208.91 + 119_182_069.68,  # R101P0800P OH + maint
-		"Kiln - BCP": 10_364_224.23 + 2_092_052.91,  # R101P0300C OH + maint
-		"Cement Mill - BCP": 4_531_007.14 + 11_760_630.94,  # R101P0400D OH + maint
-		# Coal Mill and Packing already have balances from existing CO docs
-		# But add the source amounts minus existing balance
-		# Coal Mill existing: 1,769,671.66, source: 1,352,704.70 + 1,826,683.85 = 3,179,388.55
-		# Packing existing: 26,980,328.34, source: 13,655,174.26 + 4,630,374.39 = 18,285,548.65
-	}
-
-	# Get the clearing cost center
-	clearing_cc = "Main - BCP"
-
-	# Find a primary cost element
-	primary_ce = frappe.db.get_value("Cost Element", {"cost_element_type": "Primary"}, "name")
-	if not primary_ce:
-		print("  ERROR: No primary cost element found")
-		return
-
+def create_opening_stock():
+	"""Create opening stock via Material Receipt Stock Entries dated Dec 31, 2019."""
 	created = 0
-	for cc, amount in cc_amounts.items():
-		if amount <= 0:
+	for item_code, _, _, _, qty, value, std_rate in OPENING_INVENTORY:
+		if flt(qty) <= 0:
 			continue
 
-		# Check if we already created a demo CO doc for this CC
-		existing = frappe.get_all("CO Document", filters={
-			"period": costing_period,
-			"remarks": ["like", f"%Demo OH CC%{cc}%"],
-			"docstatus": 1,
+		se = frappe.get_doc({
+			"doctype": "Stock Entry",
+			"stock_entry_type": "Material Receipt",
+			"company": COMPANY,
+			"set_posting_time": 1,
+			"posting_date": "2019-12-31",
+			"items": [{
+				"item_code": item_code,
+				"qty": qty,
+				"basic_rate": std_rate,
+				"t_warehouse": WAREHOUSE,
+			}],
 		})
-		if existing:
-			continue
-
-		doc = frappe.get_doc({
-			"doctype": "CO Document",
-			"co_document_type": "Primary Mirror",
-			"company": "Badia Cement PSJ",
-			"cost_element": primary_ce,
-			"period": costing_period,
-			"posting_date": "2020-01-31",
-			"remarks": f"Demo OH CC + Maintenance for {cc}",
-			"lines": [
-				{"cost_center": cc, "debit_amount": amount, "credit_amount": 0},
-				{"cost_center": clearing_cc, "debit_amount": 0, "credit_amount": amount},
-			],
-		})
-		doc.insert(ignore_permissions=True)
-		doc.submit()
+		se.insert(ignore_permissions=True)
+		se.submit()
 		created += 1
-		print(f"  Created CO Doc for {cc}: {amount:,.2f}")
 
 	frappe.db.commit()
-	print(f"CO Documents: {created} created for production cost centers")
+	print(f"Opening Stock Entries: {created} created")
 
 
-def print_summary():
-	"""Print a summary of the demo data."""
-	costing_period = "CP-BCP-2020-01-01"
-	print("\n" + "=" * 80)
-	print("DEMO DATA SUMMARY - Standard Cost Module End-to-End")
-	print("=" * 80)
+def create_purchase_receipts(month_idx):
+	"""Create purchase receipts for a month (0=Jan, 1=Feb)."""
+	month_name = "January" if month_idx == 0 else "February"
+	posting_date = "2020-01-15" if month_idx == 0 else "2020-02-15"
 
-	print(f"\nCosting Period: {costing_period}")
-	cp = frappe.get_doc("Costing Period", costing_period)
-	print(f"  Status: {cp.status}")
-	print(f"  Primary Mirror: {cp.primary_mirror_status}")
-	print(f"  Process Orders: {cp.process_order_status}")
-	print(f"  Allocation: {cp.allocation_status}")
-	print(f"  Production Costing: {cp.production_cost_status}")
+	supplier = _get_or_create_supplier()
+	created = 0
 
-	print(f"\nMaster Data:")
-	print(f"  Items: {frappe.db.count('Item')}")
-	print(f"  Production Phases: {frappe.db.count('Production Phase')}")
-	print(f"  Production Recipes: {frappe.db.count('Production Recipe')}")
-	print(f"  Standard Cost Rates: {frappe.db.count('Standard Cost Rate')}")
-	print(f"  Cost Elements: {frappe.db.count('Cost Element')}")
-	print(f"  Allocation Cycles: {frappe.db.count('Allocation Cycle')}")
-	print(f"  Statistical Key Figures: {frappe.db.count('Statistical Key Figure')}")
+	for item_code, jan_qty, jan_val, feb_qty, feb_val in PURCHASES:
+		qty = jan_qty if month_idx == 0 else feb_qty
+		val = jan_val if month_idx == 0 else feb_val
+		if flt(qty) <= 0:
+			continue
 
-	print(f"\nTransactional Data:")
-	print(f"  CO Documents: {frappe.db.count('CO Document')}")
-	print(f"  SKF Entries: {frappe.db.count('SKF Entry')}")
-	print(f"  Process Orders: {frappe.db.count('Process Order')}")
-	print(f"  PLCV Entries: {frappe.db.count('PLCV Entry')}")
-	print(f"  Power Production Records: {frappe.db.count('Power Production Record')}")
+		actual_rate = flt(val) / flt(qty)
 
-	# Show process order results
-	pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": costing_period, "docstatus": 1},
-		fields=["name", "recipe_name", "total_output_qty", "cc_balance", "unit_cost", "standard_rate", "cost_variance"],
-		order_by="name",
+		pr = frappe.get_doc({
+			"doctype": "Purchase Receipt",
+			"supplier": supplier,
+			"company": COMPANY,
+			"set_posting_time": 1,
+			"posting_date": posting_date,
+			"items": [{
+				"item_code": item_code,
+				"qty": qty,
+				"rate": actual_rate,
+				"warehouse": WAREHOUSE,
+			}],
+		})
+		pr.insert(ignore_permissions=True)
+		pr.submit()
+		created += 1
+
+	frappe.db.commit()
+	print(f"  {month_name} Purchase Receipts: {created} created")
+
+
+def create_overhead_jes(month_idx):
+	"""Create Journal Entries for overhead costs posting exact SAP amounts per CC."""
+	month_name = "January" if month_idx == 0 else "February"
+	posting_date = "2020-01-31" if month_idx == 0 else "2020-02-29"
+
+	# OH CC entries
+	oh_created = 0
+	for sap_code, (jan_amt, feb_amt) in OH_CC.items():
+		amt = jan_amt if month_idx == 0 else feb_amt
+		if amt <= 0:
+			continue
+
+		cc_name = cc(sap_code)
+		je = frappe.get_doc({
+			"doctype": "Journal Entry",
+			"company": COMPANY,
+			"posting_date": posting_date,
+			"user_remark": f"OH CC {sap_code} - {month_name} 2020",
+			"accounts": [
+				{
+					"account": "Miscellaneous Expenses - BCP",
+					"debit_in_account_currency": amt,
+					"cost_center": cc_name,
+				},
+				{
+					"account": "Salary - BCP",
+					"credit_in_account_currency": amt,
+				},
+			],
+		})
+		je.insert(ignore_permissions=True)
+		je.submit()
+		oh_created += 1
+
+	# Maintenance entries
+	maint_created = 0
+	for sap_code, (jan_amt, feb_amt) in MAINTENANCE_CC.items():
+		amt = jan_amt if month_idx == 0 else feb_amt
+		if amt <= 0:
+			continue
+
+		cc_name = cc(sap_code)
+		je = frappe.get_doc({
+			"doctype": "Journal Entry",
+			"company": COMPANY,
+			"posting_date": posting_date,
+			"user_remark": f"Maintenance {sap_code} - {month_name} 2020",
+			"accounts": [
+				{
+					"account": "Office Maintenance Expenses - BCP",
+					"debit_in_account_currency": amt,
+					"cost_center": cc_name,
+				},
+				{
+					"account": "Salary - BCP",
+					"credit_in_account_currency": amt,
+				},
+			],
+		})
+		je.insert(ignore_permissions=True)
+		je.submit()
+		maint_created += 1
+
+	frappe.db.commit()
+	print(f"  {month_name} JEs: {oh_created} overhead + {maint_created} maintenance")
+
+
+def create_process_orders(costing_period, month_idx):
+	"""Create Process Orders with production quantities for a month."""
+	from std_manufacturing.api.process_order import create_process_orders_for_period
+
+	# Auto-create process orders from recipes
+	create_process_orders_for_period(costing_period)
+
+	# Populate output quantities
+	orders = frappe.get_all("Process Order",
+		filters={"costing_period": costing_period, "docstatus": 0},
+		fields=["name", "output_item", "production_recipe"],
 	)
 
-	if pos:
-		print(f"\nProcess Order Results (Jan 2020):")
-		print(f"  {'Recipe':<30} {'Output Qty':>12} {'CC Balance':>15} {'Unit Cost':>12} {'Std Rate':>12} {'Variance':>12}")
-		print(f"  {'-'*30} {'-'*12} {'-'*15} {'-'*12} {'-'*12} {'-'*12}")
-		for po in pos:
-			print(f"  {po.recipe_name or '':<30} {flt(po.total_output_qty):>12.2f} {flt(po.cc_balance):>15.2f} {flt(po.unit_cost):>12.2f} {flt(po.standard_rate):>12.2f} {flt(po.cost_variance):>12.2f}")
-
-	# Production chain
-	print(f"\nProduction Chain:")
-	print(f"  Quarry → Crusher → Raw Mill → Kiln → Cement Mill → Packing")
-	print(f"             Coal Mill ↗")
-
-	print("\n" + "=" * 80)
-
-
-# ── 5. Feb 2020 ──────────────────────────────────────────────────────────────
-
-FEB_PROCESS_ORDERS = [
-	{
-		"recipe_code": "LIME-BLAST",
-		"outputs": [{"item_code": "RM-120402", "qty": 225777.00, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "RM-2000009", "qty": 646.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000075", "qty": 318.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000141", "qty": 13484.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000142", "qty": 2090.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000150", "qty": 31600.00, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "BASALT-BLAST",
-		"outputs": [{"item_code": "RM-120417", "qty": 81285.40, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "RM-2000009", "qty": 330.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000075", "qty": 240.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000141", "qty": 3815.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000142", "qty": 1952.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000150", "qty": 17150.00, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "LIME-MINE",
-		"outputs": [{"item_code": "SF-120036", "qty": 169990.87, "movement_type": "Production"}],
-		"inputs": [{"item_code": "RM-120402", "qty": 75859.45, "movement_type": "Consumption"}],
-	},
-	{
-		"recipe_code": "BASALT-MINE",
-		"outputs": [{"item_code": "SF-120412", "qty": 56799.82, "movement_type": "Production"}],
-		"inputs": [{"item_code": "RM-120417", "qty": 24814.82, "movement_type": "Consumption"}],
-	},
-	{
-		"recipe_code": "LIME-CRUSH",
-		"outputs": [{"item_code": "SF-120006", "qty": 251577.95, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120036", "qty": 94262.44, "movement_type": "Consumption"},
-			{"item_code": "RM-120402", "qty": 170323.75, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "BASALT-CRUSH",
-		"outputs": [{"item_code": "SF-120413", "qty": 52111.26, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "RM-120417", "qty": 25041.36, "movement_type": "Consumption"},
-			{"item_code": "SF-120412", "qty": 35255.90, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "COAL-GRIND",
-		"outputs": [{"item_code": "SF-120124", "qty": 18826.09, "movement_type": "Production"}],
-		"inputs": [{"item_code": "RM-120119", "qty": 19652.20, "movement_type": "Consumption"}],
-	},
-	{
-		"recipe_code": "RAW-MEAL",
-		"outputs": [{"item_code": "SF-120083", "qty": 283076.16, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120006", "qty": 233281.00, "movement_type": "Consumption"},
-			{"item_code": "SF-120413", "qty": 45398.38, "movement_type": "Consumption"},
-			{"item_code": "RM-120070", "qty": 1551.24, "movement_type": "Consumption"},
-			{"item_code": "RM-120238", "qty": 8881.39, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "CLINKER",
-		"outputs": [{"item_code": "SF-120097", "qty": 172427.32, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120083", "qty": 272390.09, "movement_type": "Consumption"},
-			{"item_code": "SF-120124", "qty": 19998.08, "movement_type": "Consumption"},
-			{"item_code": "RM-2000010", "qty": 1.45, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "CEM-425",
-		"outputs": [{"item_code": "FG-2000101", "qty": 57001.75, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120097", "qty": 46381.90, "movement_type": "Consumption"},
-			{"item_code": "RM-120002", "qty": 8965.12, "movement_type": "Consumption"},
-			{"item_code": "RM-120070", "qty": 2802.48, "movement_type": "Consumption"},
-			{"item_code": "RM-2000011", "qty": 11104.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000012", "qty": 68.98, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "CEM-325",
-		"outputs": [{"item_code": "FG-100929", "qty": 38649.59, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "SF-120097", "qty": 26896.72, "movement_type": "Consumption"},
-			{"item_code": "RM-120002", "qty": 11168.79, "movement_type": "Consumption"},
-			{"item_code": "RM-120070", "qty": 1887.49, "movement_type": "Consumption"},
-			{"item_code": "RM-2000011", "qty": 10732.00, "movement_type": "Consumption"},
-			{"item_code": "RM-2000012", "qty": 53.86, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "PACK-425",
-		"outputs": [{"item_code": "FG-2000100", "qty": 35971.00, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "FG-2000101", "qty": 35971.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100070", "qty": 559908.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100080", "qty": 163512.00, "movement_type": "Consumption"},
-		],
-	},
-	{
-		"recipe_code": "PACK-325",
-		"outputs": [{"item_code": "FG-2000004", "qty": 32734.00, "movement_type": "Production"}],
-		"inputs": [
-			{"item_code": "FG-100929", "qty": 32739.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100061", "qty": 530364.00, "movement_type": "Consumption"},
-			{"item_code": "PK-3100090", "qty": 126214.00, "movement_type": "Consumption"},
-		],
-	},
-]
-
-# Feb 2020 OH CC + Maintenance Orders amounts (mapped to ERPNext CCs)
-FEB_CC_AMOUNTS = {
-	# Production CCs: OH CC + Maintenance Orders
-	"Quarry Operations - BCP": 57_826_272.08 + 39_352_089.75,  # Blasted Lim + Lim Mined
-	"Crusher - BCP": 96_423_665.89 + 24_173_183.99 + 10_015_373.91 + 13_265_543.93,  # Lim+Bas crusher OH + maint
-	"Raw Mill - BCP": 4_530_743.81 + 29_347_284.70,  # Raw Mill OH + maint
-	"Kiln - BCP": 9_695_564.62 + 21_841_158.00 + 4_496_195.93,  # Kiln + Clinker Silo OH + maint
-	"Cement Mill - BCP": 4_281_033.81 + 2_148_370.47 + 30_487_653.45 + 185_829.29,  # CemMill + CemSilos OH + maint
-	"Coal Mill - BCP": 1_265_433.40 + 1_549_564.75 + 1_348_204.53 + 1_105_809.72 + 4_315.00,  # Coal + Petcoke + Circ + maint
-	"Packing - BCP": 12_956_220.09 + 17_406_229.68,  # Packing OH + maint
-	# Support CCs
-	"Power Plant - BCP": 8_896_717.79 + 84_842_232.46 + 151_705_143.03,  # Power OH + Wartsila + maint
-	# General/Admin (for allocation)
-	"Safety - BCP": 2_564_944.96,  # HSE
-	"Laboratory - BCP": 11_874_286.19,
-}
-
-# Feb 2020 KWH consumption by cost center
-FEB_KWH = {
-	"Crusher - BCP": 188747 + 130415,  # CRUSHR01 + CRUSHR02
-	"Raw Mill - BCP": 4198511,  # RMILLV01
-	"Coal Mill - BCP": 978952,  # COAMIV01
-	"Kiln - BCP": 4776975,  # KILN01
-	"Cement Mill - BCP": 3482445,  # FINMIB01
-	"Packing - BCP": 32654 + 39414 + 26289,  # PACKER01+02+03
-}
-FEB_KWH_GENERATED = 14180150
-
-
-def create_feb_costing_period():
-	"""Create Feb 2020 Costing Period."""
-	cp_name = "CP-BCP-2020-02-01"
-	if frappe.db.exists("Costing Period", cp_name):
-		print(f"  {cp_name} already exists")
-		return cp_name
-
-	doc = frappe.get_doc({
-		"doctype": "Costing Period",
-		"period_name": "Feb 2020",
-		"company": "Badia Cement PSJ",
-		"fiscal_year": "2020",
-		"period_start": "2020-02-01",
-		"period_end": "2020-02-29",
-		"previous_period": "CP-BCP-2020-01-01",
-	})
-	doc.insert(ignore_permissions=True)
-	doc.submit()
-	frappe.db.commit()
-	print(f"  Created and submitted {cp_name}")
-	return cp_name
-
-
-def create_feb_co_documents():
-	"""Create CO Documents for Feb 2020 production cost centers."""
-	costing_period = "CP-BCP-2020-02-01"
-	clearing_cc = "Main - BCP"
-	primary_ce = frappe.db.get_value("Cost Element", {"cost_element_type": "Primary"}, "name")
-
-	created = 0
-	for cc, amount in FEB_CC_AMOUNTS.items():
-		if amount <= 0:
+	for order in orders:
+		item = order.output_item
+		if item not in PRODUCTION_OUTPUT:
 			continue
 
-		existing = frappe.get_all("CO Document", filters={
-			"period": costing_period,
-			"remarks": ["like", f"%Demo OH CC%{cc}%"],
-			"docstatus": 1,
-		})
-		if existing:
+		jan_qty, feb_qty = PRODUCTION_OUTPUT[item]
+		qty = jan_qty if month_idx == 0 else feb_qty
+		if qty <= 0:
 			continue
 
-		doc = frappe.get_doc({
-			"doctype": "CO Document",
-			"co_document_type": "Primary Mirror",
-			"company": "Badia Cement PSJ",
-			"cost_element": primary_ce,
-			"period": costing_period,
-			"posting_date": "2020-02-29",
-			"remarks": f"Demo OH CC + Maintenance for {cc}",
-			"lines": [
-				{"cost_center": cc, "debit_amount": amount, "credit_amount": 0},
-				{"cost_center": clearing_cc, "debit_amount": 0, "credit_amount": amount},
-			],
+		doc = frappe.get_doc("Process Order", order.name)
+		posting_date = "2020-01-31" if month_idx == 0 else "2020-02-29"
+
+		# Add output entry
+		doc.append("output_entries", {
+			"item_code": item,
+			"qty": qty,
+			"posting_date": posting_date,
+			"movement_type": "Production",
 		})
-		doc.insert(ignore_permissions=True)
+
+		# Add input entries from recipe
+		recipe = frappe.get_doc("Production Recipe", order.production_recipe)
+		for inp in recipe.input_items:
+			inp_qty = qty * inp.qty_per_unit
+			doc.append("input_entries", {
+				"item_code": inp.item_code,
+				"qty": inp_qty,
+				"posting_date": posting_date,
+				"movement_type": "Consumption",
+			})
+
+		doc.save(ignore_permissions=True)
 		doc.submit()
-		created += 1
-		print(f"  Created CO Doc for {cc}: {amount:,.2f}")
 
-	frappe.db.set_value("Costing Period", costing_period, "primary_mirror_status", "Completed")
 	frappe.db.commit()
-	print(f"  CO Documents: {created} created")
+	month_name = "January" if month_idx == 0 else "February"
+	submitted = frappe.db.count("Process Order", {"costing_period": costing_period, "docstatus": 1})
+	print(f"  {month_name} Process Orders: {submitted} submitted")
 
 
-def create_feb_power_production():
-	"""Create Power Production Record for Feb 2020."""
-	costing_period = "CP-BCP-2020-02-01"
+def create_power_production(costing_period, month_idx):
+	"""Create Power Production Record with KWH data."""
+	kwh_data = JAN_KWH if month_idx == 0 else FEB_KWH
+	kwh_generated = JAN_KWH_GENERATED if month_idx == 0 else FEB_KWH_GENERATED
+
 	ppr_name = f"PWR-{costing_period}"
-
 	if frappe.db.exists("Power Production Record", ppr_name):
 		print(f"  {ppr_name} already exists")
 		return
@@ -992,251 +799,356 @@ def create_feb_power_production():
 	doc = frappe.get_doc({
 		"doctype": "Power Production Record",
 		"costing_period": costing_period,
-		"total_kwh_generated": FEB_KWH_GENERATED,
+		"total_kwh_generated": kwh_generated,
 		"dewa_kwh_purchased": 0,
-		"general_service_cc": "Plant Administration - BCP",
+		"general_service_cc": cc("R10100A10S"),
 		"kwh_consumption_table": [
-			{"cost_center": cc, "kwh_consumed": kwh}
-			for cc, kwh in FEB_KWH.items()
+			{"cost_center": cc(sap_code), "kwh_consumed": kwh}
+			for sap_code, kwh in kwh_data.items()
+			if kwh > 0
 		],
-		"remarks": "Demo data from SAP KWH Transactions (Feb 2020)",
+		"remarks": f"SAP KWH Transactions ({costing_period})",
 	})
 	doc.insert(ignore_permissions=True)
 	doc.submit()
 	frappe.db.set_value("Costing Period", costing_period, "power_status", "KWH Posted")
 	frappe.db.commit()
-	print(f"  Created and submitted {ppr_name}")
-	print(f"    Generated: {FEB_KWH_GENERATED:,.0f} KWH")
-	print(f"    Consumed: {sum(FEB_KWH.values()):,.0f} KWH across {len(FEB_KWH)} CCs")
+	month_name = "January" if month_idx == 0 else "February"
+	print(f"  {month_name} Power Production: {kwh_generated:,.0f} KWH generated")
 
 
-def create_feb_process_orders():
-	"""Create Process Orders for Feb 2020."""
-	costing_period = "CP-BCP-2020-02-01"
-	created = 0
-	for po_data in FEB_PROCESS_ORDERS:
-		recipe_name = f"RECIPE-{po_data['recipe_code']}"
-		po_name = f"PO-{po_data['recipe_code']}-{costing_period}"
+def create_costing_period(month_idx):
+	"""Create and submit a costing period."""
+	if month_idx == 0:
+		name = "January 2020"
+		start = "2020-01-01"
+		end = "2020-01-31"
+	else:
+		name = "February 2020"
+		start = "2020-02-01"
+		end = "2020-02-29"
 
-		if frappe.db.exists("Process Order", po_name):
-			continue
+	existing = frappe.db.get_value("Costing Period",
+		{"company": COMPANY, "period_start": start}, "name")
+	if existing:
+		print(f"  Costing Period {existing} already exists")
+		return existing
 
-		recipe_doc = frappe.get_doc("Production Recipe", recipe_name)
-		doc = frappe.get_doc({
-			"doctype": "Process Order",
-			"costing_period": costing_period,
-			"production_recipe": recipe_name,
-			"cost_center": recipe_doc.cost_center,
-			"output_entries": [
-				{
-					"item_code": out["item_code"],
-					"qty": out["qty"],
-					"posting_date": "2020-02-29",
-					"movement_type": out["movement_type"],
-					"target_warehouse": "Work In Progress - BCP" if out["item_code"].startswith("SF-") else "Finished Goods - BCP" if out["item_code"].startswith("FG-") else "Stores - BCP",
-				}
-				for out in po_data["outputs"]
-			],
-			"input_entries": [
-				{
-					"item_code": inp["item_code"],
-					"qty": inp["qty"],
-					"posting_date": "2020-02-29",
-					"movement_type": inp["movement_type"],
-					"source_warehouse": "Work In Progress - BCP" if inp["item_code"].startswith("SF-") or inp["item_code"].startswith("FG-") else "Stores - BCP",
-				}
-				for inp in po_data["inputs"]
-			],
-			"remarks": "Demo data from SAP Process Orders Transactions (Feb 2020)",
-		})
-		doc.insert(ignore_permissions=True)
-		created += 1
-		print(f"  Created {po_name}: output={po_data['outputs'][0]['qty']:.2f}")
-
+	cp = frappe.get_doc({
+		"doctype": "Costing Period",
+		"period_name": name,
+		"company": COMPANY,
+		"fiscal_year": "2020",
+		"period_start": start,
+		"period_end": end,
+	})
+	cp.insert(ignore_permissions=True)
+	cp.submit()
 	frappe.db.commit()
-	print(f"  Process Orders: {created} created")
+	print(f"  Costing Period created: {cp.name}")
+	return cp.name
 
 
-def submit_feb_process_orders():
-	"""Submit all draft Process Orders for Feb 2020."""
-	costing_period = "CP-BCP-2020-02-01"
-	draft_pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": costing_period, "docstatus": 0},
-		pluck="name",
-	)
-	submitted = 0
-	for po_name in draft_pos:
+# ══════════════════════════════════════════════════════════════════════════════
+# CLEANUP
+# ══════════════════════════════════════════════════════════════════════════════
+
+def cleanup_all():
+	"""Delete all transactional data in reverse dependency order."""
+	print("\n═══ Cleanup ═══")
+	frappe.flags.in_import = True
+
+	# 1. Allocation Runs
+	for dt in ["Allocation Run Cycle", "Allocation Run"]:
+		deleted = frappe.db.sql(f"DELETE FROM `tab{dt}`")
+	print("  Cleared: Allocation Runs")
+
+	# 2. CO Documents
+	for dt in ["CO Document Line", "CO Document"]:
+		frappe.db.sql(f"DELETE FROM `tab{dt}`")
+	print("  Cleared: CO Documents")
+
+	# 3. SKF Entries
+	frappe.db.sql("DELETE FROM `tabSKF Entry`")
+	print("  Cleared: SKF Entries")
+
+	# 4. Power Production Records
+	for dt in ["Power Production CC Detail", "Power Production Record"]:
+		frappe.db.sql(f"DELETE FROM `tab{dt}`")
+	print("  Cleared: Power Production Records")
+
+	# 5. Process Orders
+	for dt in ["Process Order Input", "Process Order Output", "Process Order Chain Link", "Process Order"]:
+		frappe.db.sql(f"DELETE FROM `tab{dt}`")
+	print("  Cleared: Process Orders")
+
+	# 6. PLCV and Standard Cost Revaluation
+	frappe.db.sql("DELETE FROM `tabPLCV Entry`")
+	for dt in ["Standard Cost Revaluation"]:
+		for name in frappe.get_all(dt, pluck="name"):
+			try:
+				doc = frappe.get_doc(dt, name)
+				if doc.docstatus == 1:
+					doc.cancel()
+				doc.delete()
+			except Exception:
+				frappe.db.sql(f"DELETE FROM `tab{dt}` WHERE name=%s", name)
+	print("  Cleared: PLCV + Standard Cost Revaluation")
+
+	# 7. Stock Entries and related GL/SLE
+	for name in frappe.get_all("Stock Entry", pluck="name", order_by="creation desc"):
 		try:
-			doc = frappe.get_doc("Process Order", po_name)
-			doc.submit()
-			submitted += 1
-		except Exception as e:
-			print(f"  ERROR submitting {po_name}: {e}")
+			doc = frappe.get_doc("Stock Entry", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			doc.delete()
+		except Exception:
+			pass
+	print("  Cleared: Stock Entries")
 
-	frappe.db.set_value("Costing Period", costing_period, "process_order_status", "Created")
+	# 8. Purchase Receipts
+	for name in frappe.get_all("Purchase Receipt", filters={"company": COMPANY}, pluck="name", order_by="creation desc"):
+		try:
+			doc = frappe.get_doc("Purchase Receipt", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			doc.delete()
+		except Exception:
+			pass
+	print("  Cleared: Purchase Receipts")
+
+	# 9. Stock Reconciliations
+	for name in frappe.get_all("Stock Reconciliation", filters={"company": COMPANY}, pluck="name", order_by="creation desc"):
+		try:
+			doc = frappe.get_doc("Stock Reconciliation", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			doc.delete()
+		except Exception:
+			pass
+	print("  Cleared: Stock Reconciliations")
+
+	# 10. Journal Entries (demo overhead/maintenance)
+	for name in frappe.get_all("Journal Entry",
+		filters={"company": COMPANY, "posting_date": (">=", "2019-12-01")},
+		pluck="name", order_by="creation desc"):
+		try:
+			doc = frappe.get_doc("Journal Entry", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			doc.delete()
+		except Exception:
+			pass
+	print("  Cleared: Journal Entries")
+
+	# 11. Production Recipes
+	for name in frappe.get_all("Production Recipe", pluck="name"):
+		frappe.delete_doc("Production Recipe", name, force=True)
+	print("  Cleared: Production Recipes")
+
+	# 11b. Standard Cost Rates
+	for name in frappe.get_all("Standard Cost Rate", pluck="name"):
+		try:
+			doc = frappe.get_doc("Standard Cost Rate", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			doc.delete()
+		except Exception:
+			pass
+	print("  Cleared: Standard Cost Rates")
+
+	# 12. Costing Periods
+	for name in frappe.get_all("Costing Period", filters={"company": COMPANY}, pluck="name"):
+		try:
+			doc = frappe.get_doc("Costing Period", name)
+			if doc.docstatus == 1:
+				frappe.db.set_value("Costing Period", name, "docstatus", 2)
+			doc.reload()
+			doc.delete()
+		except Exception:
+			frappe.db.sql("DELETE FROM `tabCosting Period` WHERE name=%s", name)
+	print("  Cleared: Costing Periods")
+
+	# 13. Reset Bins
+	frappe.db.sql("UPDATE `tabBin` SET actual_qty=0, stock_value=0, valuation_rate=0")
+
+	# 14. Clear remaining GL entries
+	frappe.db.sql("DELETE FROM `tabGL Entry` WHERE company=%s AND posting_date >= '2019-12-01'", COMPANY)
+	frappe.db.sql("DELETE FROM `tabStock Ledger Entry` WHERE company=%s", COMPANY)
+
+	frappe.flags.in_import = False
 	frappe.db.commit()
-	print(f"  Process Orders: {submitted} submitted")
+	print("  Cleanup complete.")
 
 
-def run_feb_allocation():
-	"""Run allocation cycles for Feb 2020."""
-	from std_manufacturing.api.allocation_engine import execute_allocation_run
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPER
+# ══════════════════════════════════════════════════════════════════════════════
 
-	costing_period = "CP-BCP-2020-02-01"
-	try:
-		result = execute_allocation_run(costing_period)
-		frappe.db.set_value("Costing Period", costing_period, "allocation_status", "Completed")
+def _get_or_create_supplier():
+	name = "SAP Test Supplier"
+	if not frappe.db.exists("Supplier", name):
+		sg = frappe.db.get_value("Supplier Group", {}, "name")
+		frappe.get_doc({
+			"doctype": "Supplier",
+			"supplier_name": name,
+			"supplier_group": sg,
+		}).insert(ignore_permissions=True)
 		frappe.db.commit()
-		print(f"  Allocation Run completed: {result}")
-	except Exception as e:
-		print(f"  ERROR running allocation: {e}")
-		import traceback
-		traceback.print_exc()
+	return name
 
 
-def run_feb_production_costing():
-	"""Calculate unit costs for Feb 2020 Process Orders."""
-	from std_manufacturing.api.process_order import calculate_unit_costs
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN ENTRY POINTS
+# ══════════════════════════════════════════════════════════════════════════════
 
-	costing_period = "CP-BCP-2020-02-01"
-	pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": costing_period, "docstatus": 1, "status": "Open"},
-		pluck="name",
-	)
-	calculated = 0
-	for po_name in pos:
-		try:
-			calculate_unit_costs(po_name)
-			calculated += 1
-			doc = frappe.get_doc("Process Order", po_name)
-			print(f"  {po_name}: output={doc.total_output_qty:.2f}, cc_balance={doc.cc_balance:.2f}, unit_cost={doc.unit_cost:.2f}, ytd_unit_cost={doc.ytd_unit_cost:.2f}")
-		except Exception as e:
-			print(f"  ERROR {po_name}: {e}")
-
-	frappe.db.set_value("Costing Period", costing_period, "production_cost_status", "Calculated")
-	frappe.db.commit()
-	print(f"  Production Costing: {calculated} calculated")
+def setup_master_data():
+	"""Step 1: Create all master data (items, recipes, standard cost rates)."""
+	print("\n═══ Master Data Setup ═══")
+	create_items()
+	create_phases()
+	create_recipes()
+	create_standard_cost_rates()
+	create_opening_stock()
 
 
-def print_feb_summary():
-	"""Print Feb 2020 results with YTD comparison."""
-	costing_period = "CP-BCP-2020-02-01"
-	print("\n" + "=" * 100)
-	print("FEB 2020 RESULTS (with YTD Jan+Feb)")
-	print("=" * 100)
-
-	pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": costing_period, "docstatus": 1},
-		fields=["name", "recipe_name", "total_output_qty", "cc_balance", "unit_cost",
-				"ytd_output_qty", "ytd_cc_balance", "ytd_unit_cost",
-				"standard_rate", "cost_variance"],
-		order_by="name",
-	)
-
-	if pos:
-		print(f"\n  {'Recipe':<25} {'Feb Qty':>10} {'Feb CC Bal':>14} {'Feb CPU':>10} {'YTD Qty':>12} {'YTD CC Bal':>15} {'YTD CPU':>10} {'Std Rate':>10} {'Var':>10}")
-		print(f"  {'-'*25} {'-'*10} {'-'*14} {'-'*10} {'-'*12} {'-'*15} {'-'*10} {'-'*10} {'-'*10}")
-		for po in pos:
-			print(f"  {po.recipe_name or '':<25} {flt(po.total_output_qty):>10.0f} {flt(po.cc_balance):>14.0f} {flt(po.unit_cost):>10.2f} {flt(po.ytd_output_qty):>12.0f} {flt(po.ytd_cc_balance):>15.0f} {flt(po.ytd_unit_cost):>10.2f} {flt(po.standard_rate):>10.2f} {flt(po.cost_variance):>10.2f}")
-
-	# Compare with Jan
-	jan_pos = frappe.get_all(
-		"Process Order",
-		filters={"costing_period": "CP-BCP-2020-01-01", "docstatus": 1},
-		fields=["recipe_name", "unit_cost"],
-		order_by="name",
-	)
-	jan_map = {p.recipe_name: p.unit_cost for p in jan_pos}
-
-	print(f"\n  Unit Cost Trend (Jan → Feb → YTD):")
-	for po in pos:
-		jan_cpu = flt(jan_map.get(po.recipe_name, 0))
-		feb_cpu = flt(po.unit_cost)
-		ytd_cpu = flt(po.ytd_unit_cost)
-		trend = "↑" if feb_cpu > jan_cpu else "↓" if feb_cpu < jan_cpu else "="
-		print(f"    {po.recipe_name or '':<25} Jan={jan_cpu:>10.2f} → Feb={feb_cpu:>10.2f} {trend} → YTD={ytd_cpu:>10.2f}")
-
-	print("\n" + "=" * 100)
+def setup_jan():
+	"""Step 2: January 2020 transactions."""
+	print("\n═══ January 2020 ═══")
+	create_purchase_receipts(0)
+	create_overhead_jes(0)
+	cp = create_costing_period(0)
+	create_power_production(cp, 0)
+	create_process_orders(cp, 0)
+	return cp
 
 
 def setup_feb():
-	"""Run all Feb 2020 setup steps."""
-	print("Setting up Feb 2020 Costing Period...")
-	print()
+	"""Step 3: February 2020 transactions."""
+	print("\n═══ February 2020 ═══")
+	create_purchase_receipts(1)
+	create_overhead_jes(1)
+	cp = create_costing_period(1)
+	create_power_production(cp, 1)
+	create_process_orders(cp, 1)
+	return cp
 
-	print("Step 1: Creating Costing Period...")
-	create_feb_costing_period()
-	print()
 
-	print("Step 2: Creating CO Documents (Primary Mirror)...")
-	create_feb_co_documents()
-	print()
+def run_costing_cycle(costing_period):
+	"""Step 4: Run the full costing cycle for a period."""
+	print(f"\n═══ Costing Cycle: {costing_period} ═══")
 
-	print("Step 3: Creating Power Production Record...")
-	create_feb_power_production()
-	print()
+	# Primary Mirror: GL → CO Documents
+	from std_manufacturing.api.co_balance import run_primary_co_mirror, run_fuel_revaluation
+	run_primary_co_mirror(costing_period)
+	co_count = frappe.db.count("CO Document", {"period": costing_period, "co_document_type": "Primary Mirror"})
+	print(f"  Primary Mirror: {co_count} CO Documents")
 
-	print("Step 4: Creating Process Orders...")
-	create_feb_process_orders()
-	print()
+	# Fuel Revaluation: HFO/LFO consumed in power → revalue to YTD CPU
+	run_fuel_revaluation(costing_period)
+	reval_count = frappe.db.count("CO Document", {
+		"period": costing_period,
+		"remarks": ("like", "%Fuel Cost%"),
+	})
+	print(f"  Fuel Revaluation: {reval_count} CO Documents")
 
-	print("Step 5: Submitting Process Orders...")
-	submit_feb_process_orders()
-	print()
+	# Allocation Cycles: redistribute costs between CCs
+	from std_manufacturing.api.allocation_engine import execute_allocation_run
+	execute_allocation_run(costing_period)
+	alloc_count = frappe.db.count("CO Document", {
+		"period": costing_period,
+		"co_document_type": ("in", ["Assessment", "Distribution"]),
+	})
+	print(f"  Allocation: {alloc_count} allocation CO Documents")
 
-	print("Step 6: Running Allocation...")
-	run_feb_allocation()
-	print()
+	# Update statuses after mirror + revaluation + allocation
+	frappe.db.set_value("Costing Period", costing_period, {
+		"primary_mirror_status": "Completed",
+		"revaluation_status": "Submitted",
+		"allocation_status": "Completed",
+		"current_step": 4,
+	})
 
-	print("Step 7: Running Production Costing...")
-	run_feb_production_costing()
-	print()
+	# Calculate unit costs in production chain order
+	from std_manufacturing.api.process_order import calculate_all_unit_costs
+	results = calculate_all_unit_costs(costing_period)
+	print(f"  Unit Costs: {len(results)} items calculated")
 
-	print_feb_summary()
+	# Update remaining statuses
+	frappe.db.set_value("Costing Period", costing_period, {
+		"process_order_status": "Closed",
+		"production_cost_status": "Calculated",
+		"purchased_cpu_status": "Calculated",
+		"produced_cpu_status": "Calculated",
+		"plcv_status": "Completed",
+		"status": "Completed",
+		"current_step": 6,
+	})
+	frappe.db.commit()
 
 
 def setup_all():
-	"""Run all demo setup steps in order."""
-	print("Starting demo data setup...")
-	print()
+	"""Full setup: cleanup → master data → Jan → Feb → costing cycles."""
+	frappe.set_user("Administrator")
 
-	print("Step 1: Creating Items...")
-	create_items()
-	print()
+	cleanup_all()
+	setup_master_data()
 
-	print("Step 2: Creating Production Phases...")
-	create_phases()
-	print()
+	jan_cp = setup_jan()
+	run_costing_cycle(jan_cp)
 
-	print("Step 3: Creating Standard Cost Rates for new items...")
-	create_standard_cost_rates_for_produced()
-	print()
+	feb_cp = setup_feb()
+	run_costing_cycle(feb_cp)
 
-	print("Step 4: Creating Production Recipes...")
-	create_recipes()
-	print()
+	print("\n═══ Setup Complete ═══")
+	print("Run verify_cpus() to compare CPUs against SAP targets.")
 
-	print("Step 5: Creating CO Documents for production cost centers...")
-	create_co_documents_for_production_ccs()
-	print()
 
-	print("Step 6: Creating Process Orders (Jan 2020)...")
-	create_process_orders()
-	print()
+# ══════════════════════════════════════════════════════════════════════════════
+# VERIFICATION
+# ══════════════════════════════════════════════════════════════════════════════
 
-	print("Step 7: Submitting Process Orders...")
-	submit_process_orders()
-	print()
+EXPECTED_CPU_JAN = {
+	"120402": 984.60,
+	"120036": 930.10,
+	"120006": 1149.16,
+	"120417": 978.03,
+	"120412": 1219.32,
+	"120413": 1743.02,
+	"120119": 74537.79,
+	"120124": 81149.64,
+	"120083": 3024.14,
+	"120097": 18256.44,
+	"100929": 19570.23,
+	"2000101": 20662.04,
+	"2000100": 24009.95,
+	"2000004": 22704.99,
+}
 
-	print("Step 8: Running Production Costing...")
-	run_production_costing()
-	print()
 
-	print_summary()
+def verify_cpus():
+	"""Compare calculated CPUs against SAP targets."""
+	print("\n═══ CPU Verification ═══")
+	print(f"{'Item':<12} {'SAP CPU':>14} {'Our CPU':>14} {'Diff':>10} {'Status':<6}")
+	print("─" * 60)
 
-	# Feb 2020
-	print("\n\n")
-	setup_feb()
+	jan_period = frappe.db.get_value("Costing Period",
+		{"company": COMPANY, "period_start": "2020-01-01"}, "name")
+
+	from std_manufacturing.api.process_order import get_item_ytd_cpu
+
+	period_doc = frappe.get_doc("Costing Period", jan_period) if jan_period else None
+
+	for item_code, expected in EXPECTED_CPU_JAN.items():
+		# Get YTD unit cost from Process Order, or fall back to purchased item CPU
+		actual = frappe.db.get_value(
+			"Process Order",
+			{"output_item": item_code, "costing_period": jan_period, "docstatus": 1},
+			"ytd_unit_cost",
+		) or 0
+		actual = flt(actual)
+		if not actual and period_doc:
+			actual = flt(get_item_ytd_cpu(item_code, period_doc))
+		diff = actual - expected
+		status = "OK" if abs(diff) < 0.02 else "FAIL"
+		print(f"{item_code:<12} {expected:>14,.2f} {actual:>14,.2f} {diff:>10,.2f} {status:<6}")

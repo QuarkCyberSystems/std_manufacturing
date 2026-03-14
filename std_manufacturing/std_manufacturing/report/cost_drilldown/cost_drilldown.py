@@ -7,7 +7,9 @@ from collections import defaultdict, OrderedDict
 def execute(filters=None):
 	columns = get_columns(filters)
 	data = get_data(filters)
-	return columns, data
+	chart = get_chart(data)
+	report_summary = get_report_summary(data)
+	return columns, data, None, chart, report_summary
 
 
 def get_columns(filters):
@@ -273,3 +275,87 @@ def _get_source_label(row):
 			return row.remarks
 		ce_name = row.cost_element_name or row.cost_element or ""
 		return f"{row.co_document_type}: {ce_name}"
+
+
+def get_chart(data):
+	"""Bar chart showing Primary Cost vs Allocated In vs Allocated Out per CC group."""
+	if not data:
+		return None
+
+	labels = []
+	primary_values = []
+	alloc_in_values = []
+	net_values = []
+
+	for row in data:
+		if row.get("indent") == 0:
+			label = row["label"]
+			# Shorten: strip company suffix
+			if " - " in label:
+				label = label.split(" - ")[0]
+			labels.append(label)
+			primary_values.append(flt(row.get("primary_amount"), 2))
+			alloc_in_values.append(flt(row.get("allocated_in"), 2))
+			net_values.append(flt(row.get("net_balance"), 2))
+
+	if not labels:
+		return None
+
+	return {
+		"data": {
+			"labels": labels,
+			"datasets": [
+				{"name": _("Primary Cost"), "values": primary_values},
+				{"name": _("Allocated In"), "values": alloc_in_values},
+				{"name": _("Net Balance"), "values": net_values},
+			],
+		},
+		"type": "bar",
+		"colors": ["#7cd6fd", "#5e64ff", "#ffa00a"],
+		"barOptions": {"stacked": False},
+	}
+
+
+def get_report_summary(data):
+	"""Reconciliation summary: total primary, total allocated, net balance."""
+	if not data:
+		return []
+
+	total_primary = 0
+	total_alloc_in = 0
+	total_alloc_out = 0
+
+	for row in data:
+		if row.get("indent") == 0:
+			total_primary += flt(row.get("primary_amount"))
+			total_alloc_in += flt(row.get("allocated_in"))
+			total_alloc_out += flt(row.get("allocated_out"))
+
+	total_net = total_primary + total_alloc_in - total_alloc_out
+
+	return [
+		{
+			"value": total_primary,
+			"indicator": "Blue",
+			"label": _("Total Primary Cost"),
+			"datatype": "Currency",
+		},
+		{
+			"value": total_alloc_in,
+			"indicator": "Green",
+			"label": _("Total Allocated In"),
+			"datatype": "Currency",
+		},
+		{
+			"value": total_alloc_out,
+			"indicator": "Orange",
+			"label": _("Total Allocated Out"),
+			"datatype": "Currency",
+		},
+		{
+			"value": total_net,
+			"indicator": "Red" if total_net < 0 else "Blue",
+			"label": _("Net Balance (Reconciliation)"),
+			"datatype": "Currency",
+		},
+	]

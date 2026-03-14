@@ -1,5 +1,30 @@
 frappe.ui.form.on("Costing Period", {
 	refresh(frm) {
+		// Dashboard indicators for step statuses
+		if (frm.doc.docstatus === 1) {
+			const status_color = (val) => {
+				if (val === "Completed" || val === "Calculated" || val === "Closed" || val === "Submitted") return "green";
+				if (val === "Running") return "orange";
+				if (val === "Pending") return "yellow";
+				return "blue";
+			};
+			const steps = [
+				["Primary Mirror", frm.doc.primary_mirror_status],
+				["Revaluation", frm.doc.revaluation_status],
+				["Allocation", frm.doc.allocation_status],
+				["Process Orders", frm.doc.process_order_status],
+				["Production Cost", frm.doc.production_cost_status],
+				["Purchased CPU", frm.doc.purchased_cpu_status],
+				["Produced CPU", frm.doc.produced_cpu_status],
+				["PLCV", frm.doc.plcv_status],
+			];
+			steps.forEach(([label, val]) => {
+				if (val) {
+					frm.dashboard.add_indicator(__(label + ": " + val), status_color(val));
+				}
+			});
+		}
+
 		if (frm.doc.docstatus !== 1 || frm.doc.status === "Completed") {
 			return;
 		}

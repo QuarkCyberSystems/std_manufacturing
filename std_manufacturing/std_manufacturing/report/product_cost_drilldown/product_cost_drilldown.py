@@ -9,7 +9,9 @@ from std_manufacturing.api.co_balance import get_co_cc_balance_for_costing
 def execute(filters=None):
 	columns = get_columns(filters)
 	data = get_data(filters)
-	return columns, data
+	chart = get_chart(data, filters)
+	report_summary = get_report_summary(data)
+	return columns, data, None, chart, report_summary
 
 
 def get_columns(filters):
@@ -313,3 +315,102 @@ def get_data(filters):
 				})
 
 	return data
+
+
+def get_chart(data, filters=None):
+	"""Bar chart comparing Unit Cost vs Standard Rate per product."""
+	if not data:
+		return None
+
+	show_ytd = filters.get("show_ytd") if filters else False
+
+	labels = []
+	unit_cost_values = []
+	std_rate_values = []
+	variance_values = []
+
+	for row in data:
+		if row.get("indent") == 1 and flt(row.get("unit_cost")):
+			labels.append(row["label"])
+			if show_ytd and flt(row.get("ytd_unit_cost")):
+				unit_cost_values.append(flt(row.get("ytd_unit_cost"), 2))
+				variance_values.append(flt(row.get("ytd_variance"), 2))
+			else:
+				unit_cost_values.append(flt(row.get("unit_cost"), 2))
+				variance_values.append(flt(row.get("cost_variance"), 2))
+			std_rate_values.append(flt(row.get("standard_rate"), 2))
+
+	if not labels:
+		return None
+
+	return {
+		"data": {
+			"labels": labels,
+			"datasets": [
+				{"name": _("Unit Cost"), "values": unit_cost_values},
+				{"name": _("Standard Rate"), "values": std_rate_values},
+			],
+		},
+		"type": "bar",
+		"colors": ["#5e64ff", "#7cd6fd"],
+		"barOptions": {"stacked": False},
+	}
+
+
+def get_report_summary(data):
+	"""Reconciliation summary: total CC balance, product count, avg variance."""
+	if not data:
+		return []
+
+	total_cc_balance = 0
+	total_variance = 0
+	product_count = 0
+	favorable = 0
+	unfavorable = 0
+
+	for row in data:
+		if row.get("indent") != 1:
+			continue
+		product_count += 1
+		total_cc_balance += flt(row.get("cc_balance"))
+		var = flt(row.get("cost_variance"))
+		total_variance += var
+		if var > 0:
+			unfavorable += 1
+		elif var < 0:
+			favorable += 1
+
+	phase_count = sum(1 for row in data if row.get("indent") == 0)
+
+	return [
+		{
+			"value": product_count,
+			"indicator": "Blue",
+			"label": _("Products"),
+			"datatype": "Int",
+		},
+		{
+			"value": phase_count,
+			"indicator": "Blue",
+			"label": _("Production Phases"),
+			"datatype": "Int",
+		},
+		{
+			"value": total_cc_balance,
+			"indicator": "Blue",
+			"label": _("Total CC Balance"),
+			"datatype": "Currency",
+		},
+		{
+			"value": unfavorable,
+			"indicator": "Red",
+			"label": _("Unfavorable Variances"),
+			"datatype": "Int",
+		},
+		{
+			"value": favorable,
+			"indicator": "Green",
+			"label": _("Favorable Variances"),
+			"datatype": "Int",
+		},
+	]

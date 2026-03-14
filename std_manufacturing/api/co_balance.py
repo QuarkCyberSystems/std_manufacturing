@@ -177,6 +177,7 @@ def run_primary_co_mirror(costing_period):
 			AND gle.is_cancelled = 0
 			AND acc.custom_cost_element IS NOT NULL
 			AND acc.custom_cost_element != ''
+			AND gle.voucher_type NOT IN ('Stock Entry', 'Purchase Receipt')
 		ORDER BY gle.posting_date, gle.name
 		""",
 		(company, start_date, end_date),
@@ -261,3 +262,118 @@ def run_primary_co_mirror(costing_period):
 	frappe.db.commit()
 	frappe.msgprint(_("{0} CO Documents created from Primary Mirror").format(co_doc_count))
 	return co_doc_count
+
+
+@frappe.whitelist()
+def run_fuel_revaluation(costing_period):
+	"""Book fuel consumed in power generation at YTD CPU to Power CC.
+
+	Since Stock Entry GL entries are excluded from Primary Mirror,
+	fuel consumption cost must be added to the Power CC via CO Documents.
+	This books the full consumption cost: consumed_qty × YTD_CPU.
+
+	SAP revalues HFO and LFO consumed in power generation using the current
+	YTD actual CPU. This adds a significant amount to the Power CC (R10100900P),
+	which then gets allocated via KWH.
+	"""
+	from std_manufacturing.api.process_order import get_item_ytd_cpu
+
+	period_doc = frappe.get_doc("Costing Period", costing_period)
+
+	# Check if already done
+	existing = frappe.db.count(
+		"CO Document",
+		{"period": costing_period, "co_document_type": "Primary Mirror",
+		 "remarks": ("like", "%Fuel Cost%"), "docstatus": 1},
+	)
+	if existing > 0:
+		frappe.msgprint(_("Fuel Revaluation already run for this period"))
+		return 0
+
+	# Get fuel consumption from demo data
+	try:
+		from std_manufacturing.demo_setup import POWER_FUEL_CONSUMPTION, CEMENT_FUEL_CONSUMPTION, cc as cc_fn
+		power_cc = cc_fn("R10100900P")
+		cement_mill_cc = cc_fn("R101P0400D")
+	except ImportError:
+		frappe.throw(_("Could not import fuel consumption data"))
+		return 0
+
+	company = period_doc.company
+	month_idx = 0 if period_doc.period_start.month == 1 else 1
+
+	# Get clearing cost center
+	clearing_cc = frappe.db.get_value(
+		"Cost Center", {"company": company, "is_group": 1, "parent_cost_center": ("in", ["", None])}, "name"
+	)
+	if not clearing_cc:
+		clearing_cc = frappe.db.get_value("Cost Center", {"company": company, "is_group": 1}, "name")
+
+	total_reval = 0
+	co_docs_created = 0
+
+	# Combine fuel consumption: (item_code, qty_tuple, target_cc)
+	all_fuel = []
+	for item_code, qty_tuple in POWER_FUEL_CONSUMPTION.items():
+		all_fuel.append((item_code, qty_tuple, power_cc))
+	for item_code, qty_tuple in CEMENT_FUEL_CONSUMPTION.items():
+		all_fuel.append((item_code, qty_tuple, cement_mill_cc))
+
+	for item_code, (jan_qty, feb_qty), target_cc in all_fuel:
+		# Current period consumed qty only (not YTD)
+		period_qty = jan_qty if month_idx == 0 else feb_qty
+
+		if flt(period_qty) <= 0:
+			continue
+
+		# Get YTD CPU for this fuel
+		ytd_cpu = get_item_ytd_cpu(item_code, period_doc)
+
+		# Period consumption cost at YTD CPU
+		fuel_cost = flt(period_qty) * flt(ytd_cpu)
+		if abs(fuel_cost) < 0.01:
+			continue
+
+		total_reval += fuel_cost
+
+		# Ensure CE-FUEL-REVAL exists
+		if not frappe.db.exists("Cost Element", "CE-FUEL-REVAL"):
+			ce = frappe.new_doc("Cost Element")
+			ce.cost_element_code = "CE-FUEL-REVAL"
+			ce.cost_element_name = "Fuel Revaluation"
+			ce.cost_element_type = "Secondary"
+			ce.secondary_category = "Assessment"
+			ce.status = "Active"
+			ce.insert(ignore_permissions=True)
+
+		# Create CO Document debiting Power CC with fuel cost
+		co_doc = frappe.new_doc("CO Document")
+		co_doc.co_document_type = "Primary Mirror"
+		co_doc.company = company
+		co_doc.cost_element = "CE-FUEL-REVAL"
+		co_doc.period = costing_period
+		co_doc.posting_date = period_doc.period_end
+		co_doc.remarks = f"Fuel Cost {item_code}: {period_qty:,.2f} × {ytd_cpu:,.2f}"
+
+		co_doc.append("lines", {
+			"cost_center": target_cc,
+			"debit_amount": fuel_cost,
+			"credit_amount": 0,
+		})
+		co_doc.append("lines", {
+			"cost_center": clearing_cc,
+			"debit_amount": 0,
+			"credit_amount": fuel_cost,
+		})
+
+		co_doc.insert(ignore_permissions=True)
+		co_doc.submit()
+		co_docs_created += 1
+
+	frappe.db.commit()
+	frappe.msgprint(
+		_("Fuel Revaluation: {0} CO Documents created, total revaluation: {1}").format(
+			co_docs_created, frappe.format_value(total_reval, {"fieldtype": "Currency"})
+		)
+	)
+	return co_docs_created
